@@ -23,7 +23,7 @@ import { NextExercisePreview, useRestTimer } from "@/context/RestTimerContext";
 import { resolveDisplayValue } from "@/lib/resolveDisplayValue";
 import RepRangeAlertSheet from "../RepRangeAlertSheet";
 
-import { DAY_FULL, todayIso } from "../../utils";
+import { DAY_FULL, findLastSameTypeRecord, todayIso } from "../../utils";
 import RestTimerOverlay from "../RestTimerButton";
 import SeriesInputRow, { SeriesInputRowHandle } from "../SeriesInputRow";
 import SessionEditDrawer from "../SessionEditDrawer";
@@ -245,16 +245,19 @@ export default function SessionView({
     );
   }, [sessionData, currentExercise, currentSeriesIndex]);
 
+  // Só serve de fallback se for da MESMA série (type) — senão o peso/reps de
+  // um aquecimento vaza pra prévia de uma série de trabalho, por exemplo.
   const previousSeriesRecord = useMemo(() => {
-    if (!sessionData || !currentExercise || currentSeriesIndex === 0) return null;
-    return (
-      sessionData.records?.find(
-        (r) =>
-          r.exerciseName === currentExercise.name &&
-          r.seriesOrder === currentSeriesIndex,
-      ) ?? null
+    if (!sessionData || !currentExercise || !currentSeries || currentSeriesIndex === 0) {
+      return null;
+    }
+    return findLastSameTypeRecord(
+      sessionData.records,
+      currentExercise.name,
+      currentSeries.type,
+      currentSeriesIndex + 1,
     );
-  }, [sessionData, currentExercise, currentSeriesIndex]);
+  }, [sessionData, currentExercise, currentSeries, currentSeriesIndex]);
 
   const previousSeriesWeight = previousSeriesRecord?.weight ?? null;
   const previousSeriesReps = previousSeriesRecord?.repsCompleted ?? null;
@@ -372,14 +375,17 @@ export default function SessionView({
           const logged = sessionData?.records?.find(
             (r) => r.exerciseName === exercise.name && r.seriesOrder === nextSeriesIdx + 1,
           );
-          const previousSeriesRecord = sessionData?.records?.find(
-            (r) => r.exerciseName === exercise.name && r.seriesOrder === currentSeriesIndex + 1,
+          const previousSameTypeRecord = findLastSameTypeRecord(
+            sessionData?.records,
+            exercise.name,
+            nextSeries.type,
+            nextSeriesIdx + 1,
           );
           const lastWeight = await resolveLastWeight(
             exercise.name,
             nextSeries,
             logged?.weight,
-            previousSeriesRecord?.weight ?? null,
+            previousSameTypeRecord?.weight ?? null,
           );
           const preview: NextExercisePreview = {
             name: exercise.name,

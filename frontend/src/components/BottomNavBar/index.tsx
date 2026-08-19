@@ -59,6 +59,10 @@ const StyledNav = styled.nav`
   background-color: ${({ theme }) => theme.colors.glassOverlay};
   border-top: 1px solid ${({ theme }) => theme.colors.outlineVariant};
   backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  will-change: transform;
   padding: 8px ${({ theme }) => theme.spacing.sm};
   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
   z-index: 100;

@@ -13,6 +13,9 @@ export const StyledWidget = styled.div`
   border-radius: 5px;
   background-color: ${({ theme }) => theme.colors.glassOverlay};
   backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  transform: translateZ(0);
+  will-change: transform;
   box-shadow: 0 8px 24px -8px rgba(0, 0, 0, 0.4);
   color: ${({ theme }) => theme.colors.primary};
   cursor: pointer;
@@ -22,7 +25,7 @@ export const StyledWidget = styled.div`
     background-color 0.25s ease;
 
   &:active {
-    transform: scale(0.96);
+    transform: translateZ(0) scale(0.96);
   }
 `;
 
