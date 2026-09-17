@@ -7,6 +7,7 @@ import { useAppTheme } from "@/styles/ThemeProvider";
 import { NextExercisePreview, useRestTimer } from "@/context/RestTimerContext";
 
 import { useRestAlerts } from "../../context/RestAlertsContext";
+import { useScrollLock } from "@/hooks/useScrollLock";
 import {
   StyledClockSvg,
   StyledClockWrapper,
@@ -27,6 +28,8 @@ import {
   StyledNextCardStats,
   StyledNextCardStatUnit,
   StyledNextCardStatValue,
+  StyledNextCardSkeletonLine,
+  StyledNextCardSkeletonStack,
   StyledNextCardTypeChip,
   StyledOverlayBody,
   StyledRestLabel,
@@ -42,6 +45,8 @@ interface RestTimerOverlayProps {
   onDismiss: () => void;
   onMinimize?: () => void;
   nextExercise?: NextExercisePreview | null;
+  /** Preview da proxima serie ainda sendo resolvido (peso vem da rede). */
+  isNextLoading?: boolean;
 }
 
 export default function RestTimerOverlay({
@@ -50,6 +55,7 @@ export default function RestTimerOverlay({
   onDismiss,
   onMinimize,
   nextExercise,
+  isNextLoading = false,
 }: RestTimerOverlayProps) {
   const { theme } = useAppTheme();
   const { playRestEndAlert } = useRestAlerts();
@@ -86,16 +92,7 @@ export default function RestTimerOverlay({
     setDragY(0);
   };
 
-  useEffect(() => {
-    if (!visible) return;
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [visible]);
+  useScrollLock(visible);
 
   useEffect(() => {
     if (!visible) return;
@@ -215,6 +212,22 @@ export default function RestTimerOverlay({
           {formatMMSS(Math.max(0, timeLeft))}
         </StyledDigitalTime>
 
+        {!nextExercise && isNextLoading && (
+          <StyledNextCard aria-busy="true" aria-label="Carregando proxima serie">
+            <StyledNextCardAccentBar />
+            <StyledNextCardContent>
+              <StyledNextCardSkeletonStack>
+                <StyledNextCardSkeletonLine $w="45%" $h="10px" />
+                <StyledNextCardSkeletonLine $w="85%" $h="20px" />
+                <StyledNextCardSkeletonLine $w="60%" $h="14px" />
+                <StyledNextCardSkeletonLine $w="70%" $h="28px" />
+              </StyledNextCardSkeletonStack>
+            </StyledNextCardContent>
+          </StyledNextCard>
+        )}
+
+        {/* Continua disponivel enquanto o preview carrega: se a rede travar,
+            o usuario nao pode ficar preso no esqueleto sem saida. */}
         {!nextExercise && (
           <StyledSkipRestBtn type="button" onClick={onDismiss}>
             Pular descanso

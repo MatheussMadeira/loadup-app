@@ -1,4 +1,4 @@
-import styled from "styled-components";
+import styled, { keyframes } from "styled-components";
 
 export const StyledRestOverlay = styled.div`
   position: fixed;
@@ -254,4 +254,32 @@ export const StyledNextCardCta = styled.button`
   &:active {
     filter: brightness(1.1);
   }
+`;
+
+/* ── Estado de carregamento do card de proxima serie ──────────────────────
+   O descanso abre no instante em que a serie termina, mas o peso sugerido
+   pode depender de uma chamada de rede. Enquanto ela nao volta o card
+   aparece como esqueleto, no lugar de a tela ficar em branco (ou pior: de
+   a proxima serie aparecer antes do cronometro). */
+const skeletonPulse = keyframes`
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 0.7; }
+`;
+
+export const StyledNextCardSkeletonLine = styled.div<{ $w: string; $h?: string }>`
+  width: ${({ $w }) => $w};
+  height: ${({ $h }) => $h ?? "12px"};
+  border-radius: 999px;
+  background: ${({ theme }) => theme.colors.outlineVariant};
+  animation: ${skeletonPulse} 1.2s ease-in-out infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+`;
+
+export const StyledNextCardSkeletonStack = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 `;

@@ -6,6 +6,7 @@ import styled, { keyframes } from "styled-components";
 import { X } from "lucide-react";
 
 import { RepRangeAlert } from "@/types";
+import { useScrollLock } from "@/hooks/useScrollLock";
 
 interface RepRangeAlertSheetProps {
   alert: RepRangeAlert;
@@ -28,11 +29,9 @@ export default function RepRangeAlertSheet({
 
   useEffect(() => {
     setMounted(true);
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = "";
-    };
   }, []);
+
+  useScrollLock();
 
   const handleTouchStart = (e: React.TouchEvent) => {
     setStartY(e.touches[0].clientY);

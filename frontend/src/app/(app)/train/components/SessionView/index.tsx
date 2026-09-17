@@ -20,6 +20,7 @@ import { DayOfWeek, RepRangeAlert, Series, SeriesType, TrainingDay } from "@/typ
 import { trainingSheetService } from "@/services/trainingSheetService";
 import { progressionService } from "@/services/progressionService";
 import { NextExercisePreview, useRestTimer } from "@/context/RestTimerContext";
+import { useDelayedFlag } from "@/hooks/useDelayedFlag";
 import { resolveDisplayValue } from "@/lib/resolveDisplayValue";
 import RepRangeAlertSheet from "../RepRangeAlertSheet";
 
@@ -31,6 +32,7 @@ import SessionEditDrawer from "../SessionEditDrawer";
 import {
   StyledActiveSessionLayout,
   StyledBackBtn,
+  StyledBtnSpinner,
   StyledConcludeBtn,
   StyledDoneBanner,
   StyledDoneBannerIcon,
@@ -86,6 +88,7 @@ export default function SessionView({
     isActive: contextIsActive,
     nextExercise: contextNextExercise,
     startRestTimer,
+    setNextExercise: setContextNextExercise,
     stopRestTimer,
   } = useRestTimer();
 
@@ -94,6 +97,10 @@ export default function SessionView({
   const [showEditDrawer, setShowEditDrawer] = useState(false);
   const [showRestTimer, setShowRestTimer] = useState(false);
   const [restDuration, setRestDuration] = useState(0);
+  // Cobre a janela entre "concluir serie" e a tela de descanso ficar pronta:
+  // gravar o registro e resolver o peso sugerido sao duas idas a rede.
+  const [isAdvancing, setIsAdvancing] = useState(false);
+  const [isNextPreviewLoading, setIsNextPreviewLoading] = useState(false);
   const [nextExercisePreview, setNextExercisePreview] =
     useState<NextExercisePreview | null>(null);
   // Peso já resolvido (mesma lógica do card de próximo exercício) para a
@@ -107,6 +114,11 @@ export default function SessionView({
     seriesOrder: number;
     suggestedWeight: number;
   } | null>(null);
+
+  // `isAdvancing` trava o botao imediatamente (guarda contra toque duplo);
+  // o feedback visual so aparece se a espera passar de 150ms, senao o registro
+  // otimistico resolve tao rapido que o spinner viraria um piscado.
+  const showAdvancingFeedback = useDelayedFlag(isAdvancing);
 
   const seriesInputRef = useRef<SeriesInputRowHandle>(null);
   const hasInitialized = useRef(false);
@@ -355,6 +367,14 @@ export default function SessionView({
     [queryClient],
   );
 
+  // A ordem aqui importa. Antes o indice da serie avancava primeiro e so
+  // depois (apos resolver o peso na rede) o overlay de descanso aparecia —
+  // por isso dava pra ver a proxima serie por um instante antes do
+  // cronometro, e em rede lenta dava pra tocar em "concluir" de novo e pular
+  // uma etapa do treino. Agora o descanso abre primeiro (o cronometro tem que
+  // largar no momento exato em que a serie acabou), a troca de serie acontece
+  // atras do overlay, e o card da proxima serie mostra um esqueleto enquanto
+  // o peso nao resolve.
   const advanceAfterSeries = useCallback(
     async (restTime: number) => {
       const exercise = exercises[currentExerciseIndex];
@@ -363,71 +383,89 @@ export default function SessionView({
       setResolvedNextWeight(null);
 
       const hasMoreSeries = currentSeriesIndex < exercise.series.length - 1;
+      const hasMoreExercises = currentExerciseIndex < exercises.length - 1;
 
-      if (hasMoreSeries) {
-        const nextSeriesIdx = currentSeriesIndex + 1;
-        const nextSeries = exercise.series[nextSeriesIdx];
-        setCurrentSeriesIndex((prev) => prev + 1);
-        if (restTime > 0) {
-          const logged = sessionData?.records?.find(
-            (r) => r.exerciseName === exercise.name && r.seriesOrder === nextSeriesIdx + 1,
-          );
-          const previousSeriesRecord = sessionData?.records?.find(
-            (r) => r.exerciseName === exercise.name && r.seriesOrder === currentSeriesIndex + 1,
-          );
-          const lastWeight = await resolveLastWeight(
-            exercise.name,
-            nextSeries,
-            logged?.weight,
-            previousSeriesRecord?.weight ?? null,
-          );
-          const preview: NextExercisePreview = {
-            name: exercise.name,
+      if (!hasMoreSeries && !hasMoreExercises) {
+        handleConclude();
+        return;
+      }
+
+      const withRest = restTime > 0;
+
+      if (withRest) {
+        setNextExercisePreview(null);
+        setIsNextPreviewLoading(true);
+        setRestDuration(restTime);
+        setShowRestTimer(true);
+        startRestTimer(restTime, null);
+      }
+
+      const nextTarget = hasMoreSeries
+        ? {
+            exerciseName: exercise.name,
             muscleGroup: exercise.muscleGroup,
             isNewExercise: false,
-            seriesTypeLabel: SERIES_TYPE_LABEL[nextSeries.type],
-            lastWeight,
-            repsMin: nextSeries.repsMin ?? null,
-            repsMax: nextSeries.repsMax ?? null,
-          };
-          setNextExercisePreview(preview);
-          setResolvedNextWeight(lastWeight);
-          setRestDuration(restTime);
-          setShowRestTimer(true);
-          startRestTimer(restTime, preview);
-        }
-        return;
-      }
-
-      if (currentExerciseIndex < exercises.length - 1) {
-        const nextEx = exercises[currentExerciseIndex + 1];
-        const nextSeries = nextEx.series[0];
-        setCurrentExerciseIndex((prev) => prev + 1);
-        setCurrentSeriesIndex(0);
-        if (restTime > 0) {
-          const logged = sessionData?.records?.find(
-            (r) => r.exerciseName === nextEx.name && r.seriesOrder === 1,
-          );
-          const lastWeight = await resolveLastWeight(nextEx.name, nextSeries, logged?.weight);
-          const preview: NextExercisePreview = {
-            name: nextEx.name,
-            muscleGroup: nextEx.muscleGroup,
+            series: exercise.series[currentSeriesIndex + 1],
+            seriesOrder: currentSeriesIndex + 2,
+          }
+        : {
+            exerciseName: exercises[currentExerciseIndex + 1].name,
+            muscleGroup: exercises[currentExerciseIndex + 1].muscleGroup,
             isNewExercise: true,
-            seriesTypeLabel: SERIES_TYPE_LABEL[nextSeries.type],
-            lastWeight,
-            repsMin: nextSeries?.repsMin ?? null,
-            repsMax: nextSeries?.repsMax ?? null,
+            series: exercises[currentExerciseIndex + 1].series[0],
+            seriesOrder: 1,
           };
-          setNextExercisePreview(preview);
-          setResolvedNextWeight(lastWeight);
-          setRestDuration(restTime);
-          setShowRestTimer(true);
-          startRestTimer(restTime, preview);
-        }
-        return;
-      }
 
-      handleConclude();
+      try {
+        let lastWeight: number | null = null;
+
+        if (withRest) {
+          const logged = sessionData?.records?.find(
+            (r) =>
+              r.exerciseName === nextTarget.exerciseName &&
+              r.seriesOrder === nextTarget.seriesOrder,
+          );
+          const previousRecord = hasMoreSeries
+            ? sessionData?.records?.find(
+                (r) =>
+                  r.exerciseName === exercise.name &&
+                  r.seriesOrder === currentSeriesIndex + 1,
+              )
+            : undefined;
+
+          lastWeight = await resolveLastWeight(
+            nextTarget.exerciseName,
+            nextTarget.series,
+            logged?.weight,
+            previousRecord?.weight ?? null,
+          );
+
+          const preview: NextExercisePreview = {
+            name: nextTarget.exerciseName,
+            muscleGroup: nextTarget.muscleGroup,
+            isNewExercise: nextTarget.isNewExercise,
+            seriesTypeLabel: SERIES_TYPE_LABEL[nextTarget.series.type],
+            lastWeight,
+            repsMin: nextTarget.series?.repsMin ?? null,
+            repsMax: nextTarget.series?.repsMax ?? null,
+          };
+
+          setNextExercisePreview(preview);
+          setContextNextExercise(preview);
+          setResolvedNextWeight(lastWeight);
+        }
+      } finally {
+        setIsNextPreviewLoading(false);
+
+        // Avanca so no fim: com descanso, isso acontece escondido atras do
+        // overlay; sem descanso, e a transicao direta pra proxima serie.
+        if (hasMoreSeries) {
+          setCurrentSeriesIndex((prev) => prev + 1);
+        } else {
+          setCurrentExerciseIndex((prev) => prev + 1);
+          setCurrentSeriesIndex(0);
+        }
+      }
     },
     [
       currentExerciseIndex,
@@ -436,22 +474,34 @@ export default function SessionView({
       sessionData,
       handleConclude,
       startRestTimer,
+      setContextNextExercise,
       resolveLastWeight,
     ],
   );
 
   const handleSeriesConclude = async () => {
-    if (!seriesInputRef.current) return;
-    const ok = await seriesInputRef.current.check();
-    if (!ok) return;
-    const restTime = seriesInputRef.current.getRestTime();
-    void advanceAfterSeries(restTime);
+    if (isAdvancing || !seriesInputRef.current) return;
+    setIsAdvancing(true);
+    try {
+      const ok = await seriesInputRef.current.check();
+      if (!ok) return;
+      const restTime = seriesInputRef.current.getRestTime();
+      await advanceAfterSeries(restTime);
+    } finally {
+      setIsAdvancing(false);
+    }
   };
 
-  const handleSeriesSkip = () => {
-    const restTime =
-      seriesInputRef.current?.getRestTime() ?? currentSeries?.restTime ?? 0;
-    void advanceAfterSeries(restTime);
+  const handleSeriesSkip = async () => {
+    if (isAdvancing) return;
+    setIsAdvancing(true);
+    try {
+      const restTime =
+        seriesInputRef.current?.getRestTime() ?? currentSeries?.restTime ?? 0;
+      await advanceAfterSeries(restTime);
+    } finally {
+      setIsAdvancing(false);
+    }
   };
 
   const renderReadOnlyBody = () => (
@@ -639,8 +689,12 @@ export default function SessionView({
           {!isReadOnly && currentExercise && (
             <StyledSessionBottomBar>
               <StyledSkipBtn
-                onClick={handleSeriesSkip}
-                disabled={completeSession.isPending || showRestTimer}
+                onClick={() => {
+                  void handleSeriesSkip();
+                }}
+                disabled={
+                  completeSession.isPending || showRestTimer || isAdvancing
+                }
               >
                 {strings.workout.skipBtn}
               </StyledSkipBtn>
@@ -648,20 +702,29 @@ export default function SessionView({
                 onClick={() => {
                   void handleSeriesConclude();
                 }}
-                disabled={completeSession.isPending || showRestTimer}
+                disabled={
+                  completeSession.isPending || showRestTimer || isAdvancing
+                }
+                aria-busy={isAdvancing}
               >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                >
-                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
-                </svg>
-                {strings.workout.concludeBtn(
-                  currentSeriesIndex + 1,
-                  totalSeriesInExercise,
+                {showAdvancingFeedback ? (
+                  <StyledBtnSpinner aria-hidden="true" />
+                ) : (
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                  >
+                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
+                  </svg>
                 )}
+                {showAdvancingFeedback
+                  ? "SALVANDO..."
+                  : strings.workout.concludeBtn(
+                      currentSeriesIndex + 1,
+                      totalSeriesInExercise,
+                    )}
               </StyledConcludeBtn>
             </StyledSessionBottomBar>
           )}
@@ -673,6 +736,7 @@ export default function SessionView({
               onDismiss={handleDismissRest}
               onMinimize={() => router.push("/home")}
               nextExercise={nextExercisePreview}
+              isNextLoading={isNextPreviewLoading}
             />
           )}
 

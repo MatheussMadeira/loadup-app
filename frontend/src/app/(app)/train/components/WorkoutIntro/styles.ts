@@ -9,7 +9,7 @@ const hexToRgba = (hex: string, alpha: number) => {
 };
 
 export const StyledWorkoutIntro = styled.div`
-  min-height: 100vh;
+  min-height: 100%;
   background: ${({ theme }) => theme.colors.background};
   position: relative;
   overflow: hidden;
@@ -193,12 +193,11 @@ export const StyledExerciseSeries = styled.span`
 
 export const StyledBottomBar = styled.div`
   position: fixed;
-  bottom: 10%;
+  bottom: var(--bottom-nav-height);
   left: 50%;
   transform: translateX(-50%);
   width: 100%;
-  padding: 16px 24px 32px;
-  margin-bottom: 30px;
+  padding: 16px 24px 20px;
   background: linear-gradient(
     to bottom,
     transparent 0%,

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useScrollLock } from "@/hooks/useScrollLock";
 
 import {
   StyledNumPadBackdrop,
@@ -43,11 +44,9 @@ export default function NumPad({
 
   useEffect(() => {
     setMounted(true);
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = "";
-    };
   }, []);
+
+  useScrollLock();
 
   const handleTouchStart = (e: React.TouchEvent) => {
     setStartY(e.touches[0].clientY);

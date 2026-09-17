@@ -9,7 +9,8 @@ export const StyledSessionPage = styled.div`
   position: relative;
   min-height: 100%;
   background: ${({ theme }) => theme.colors.background};
-  padding-bottom: 180px;
+  /* Altura da StyledSessionBottomBar fixa desta tela. */
+  padding-bottom: 92px;
   color: ${({ theme }) => theme.colors.onSurface};
 `;
 
@@ -227,17 +228,16 @@ export const StyledEmptyText = styled.p`
 
 export const StyledSessionBottomBar = styled.div`
   position: fixed;
-  bottom: 12%;
+  bottom: var(--bottom-nav-height);
   left: 0;
   right: 0;
   display: flex;
   gap: ${({ theme }) => theme.spacing.sm};
-  padding: 12px ${({ theme }) => theme.spacing.md};
+  padding: 12px ${({ theme }) => theme.spacing.md} calc(12px + var(--floating-gap));
   background: ${({ theme }) => theme.colors.background};
   border-top: 1px solid ${({ theme }) => theme.colors.outlineVariant};
-  margin: 15px auto;
   box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.05);
-  z-index: 100;
+  z-index: 90;
 `;
 
 export const StyledSkipBtn = styled.button`
@@ -398,7 +398,7 @@ export const StyledSheetCancelBtn = styled.button`
 
 export const StyledErrorToast = styled.div`
   position: fixed;
-  bottom: 96px;
+  bottom: var(--fab-bottom);
   left: 50%;
   transform: translateX(-50%);
   background: ${({ theme }) => theme.colors.errorContainer};
@@ -516,7 +516,7 @@ export const StyledSeriesProgressDot = styled.span<{
 export const StyledActiveSessionLayout = styled.div`
   display: flex;
   flex-direction: column;
-  min-height: calc(100vh - 160px);
+  min-height: calc(100% - 160px);
 `;
 
 export const StyledRestOverlay = styled.div`
@@ -575,5 +575,24 @@ export const StyledSkipRestBtn = styled.button`
   &:hover {
     background: ${({ theme }) => theme.colors.surface};
     transform: translateY(-1px);
+  }
+`;
+
+const spin = keyframes`
+  to { transform: rotate(360deg); }
+`;
+
+/** Spinner do botao "concluir serie" enquanto o registro esta sendo salvo. */
+export const StyledBtnSpinner = styled.span`
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  animation: ${spin} 700ms linear infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation-duration: 2s;
   }
 `;

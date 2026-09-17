@@ -235,25 +235,40 @@ const SeriesInputRow = forwardRef<SeriesInputRowHandle, SeriesInputRowProps>(
         });
       }
 
-      return new Promise((resolve) => {
-        addRecord.mutate(payload, {
-          onSuccess: (data) => {
-            if (data.repRangeAlert && onRepRangeAlert) {
-              onRepRangeAlert(data.repRangeAlert, safeWeight);
-            }
-            persistSeriesSuggestions({
-              weight: safeWeight,
-              reps: safeReps,
-              restTime: safeRest,
-            });
-            resolve(true);
-          },
-          onError: () => {
-            toast.error("Erro ao registrar. Tente novamente.");
-            resolve(false);
-          },
-        });
+      // Registro novo: o `onMutate` do useAddRecord ja grava a serie no cache
+      // otimisticamente, entao a UI pode seguir imediatamente e a ida ao
+      // servidor termina em background. Antes esta Promise so resolvia no
+      // onSuccess, o que fazia o usuario pagar o round-trip em *toda* serie —
+      // caro numa academia com sinal ruim, e sem nenhum ganho, porque o dado
+      // ja estava no cache.
+      //
+      // Nao ha retry automatico de proposito: o endpoint faz `records.push()`
+      // no backend, entao ele nao e idempotente e um retry depois de resposta
+      // perdida criaria uma serie duplicada.
+      addRecord.mutate(payload, {
+        onSuccess: (data) => {
+          if (data.repRangeAlert && onRepRangeAlert) {
+            onRepRangeAlert(data.repRangeAlert, safeWeight);
+          }
+          persistSeriesSuggestions({
+            weight: safeWeight,
+            reps: safeReps,
+            restTime: safeRest,
+          });
+        },
+        onError: () => {
+          // O useAddRecord ja reverteu o cache; aqui so garantimos que o
+          // usuario saiba qual serie precisa refazer, já que ele seguiu em
+          // frente enquanto isso.
+          toast.error(
+            `Série ${seriesIndex + 1} de ${exercise.name} não foi salva. ` +
+              `Refaça o registro pelo menu de edição do treino.`,
+            { duration: 8000 },
+          );
+        },
       });
+
+      return Promise.resolve(true);
     }, [
       isBusy,
       isReadOnly,

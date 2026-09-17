@@ -30,6 +30,13 @@ interface RestTimerContextValue {
   restDuration: number;
   nextExercise: NextExercisePreview | null;
   startRestTimer: (duration: number, next: NextExercisePreview | null) => void;
+  /**
+   * Preenche o card de "proxima serie" depois que o descanso ja comecou.
+   * O cronometro tem que largar no instante em que a serie termina, mas o
+   * peso sugerido pode depender de uma chamada de rede — entao o timer
+   * comeca sem preview e o preview chega aqui quando resolve.
+   */
+  setNextExercise: (next: NextExercisePreview | null) => void;
   stopRestTimer: () => void;
 }
 
@@ -125,8 +132,23 @@ export function RestTimerProvider({ children }: { children: ReactNode }) {
   }, [isActive, targetTime, subscription]);
 
   const value = useMemo(
-    () => ({ isActive, timeLeft, restDuration, nextExercise, startRestTimer, stopRestTimer }),
-    [isActive, timeLeft, restDuration, nextExercise, startRestTimer, stopRestTimer],
+    () => ({
+      isActive,
+      timeLeft,
+      restDuration,
+      nextExercise,
+      startRestTimer,
+      setNextExercise,
+      stopRestTimer,
+    }),
+    [
+      isActive,
+      timeLeft,
+      restDuration,
+      nextExercise,
+      startRestTimer,
+      stopRestTimer,
+    ],
   );
 
   return (

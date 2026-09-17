@@ -9,6 +9,7 @@ import { strings } from "@/constants/strings";
 import { useUpdateRecord, useDeleteRecord } from "@/hooks/useSession";
 import { Exercise, LoggedSet, TrainingSession } from "@/types";
 import { SERIES_ABBR, SERIES_COLOR } from "../../utils";
+import { useScrollLock } from "@/hooks/useScrollLock";
 
 import {
   Backdrop,
@@ -72,11 +73,9 @@ export default function SessionEditDrawer({
 
   useEffect(() => {
     setMounted(true);
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = "";
-    };
   }, []);
+
+  useScrollLock();
 
   const groups = useMemo(() => {
     const byName = new Map<string, LoggedSet[]>();
