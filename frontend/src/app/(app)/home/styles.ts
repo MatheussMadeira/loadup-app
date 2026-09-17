@@ -19,7 +19,7 @@ export const StyledBody = styled.main`
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.md};
   padding: ${({ theme }) => theme.spacing.md};
-  padding-bottom: 96px;
+  padding-bottom: ${({ theme }) => theme.spacing.lg};
 `;
 
 export const StyledHeaderSkeleton = styled.div`

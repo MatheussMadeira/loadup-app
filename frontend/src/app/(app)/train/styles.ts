@@ -10,7 +10,7 @@ export const StyledPage = styled.div`
   flex-direction: column;
   min-height: 100%;
   background: ${({ theme }) => theme.colors.background};
-  padding-bottom: 100px;
+  padding-bottom: ${({ theme }) => theme.spacing.lg};
 `;
 
 export const StyledDayCardSkeleton = styled.div`

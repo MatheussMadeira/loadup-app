@@ -11,17 +11,26 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
   return output;
 }
 
+/**
+ * Assina o push para o alerta de fim de descanso.
+ *
+ * Depende de um service worker ja registrado (useServiceWorker) — e o guard
+ * de `PushManager` aqui vale so pro push, nao mais pro registro do worker.
+ * No iOS `PushManager` so existe com o app instalado na tela de inicio.
+ */
 export function usePushNotifications() {
   const [subscription, setSubscription] = useState<PushSubscription | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
+    if (!("Notification" in window)) return;
 
     async function setup() {
       try {
-        const reg = await navigator.serviceWorker.register("/sw.js");
-        await navigator.serviceWorker.ready;
+        // O registro em si e responsabilidade do useServiceWorker (roda na
+        // raiz, pra todas as rotas). Aqui so esperamos ele ficar ativo.
+        const reg = await navigator.serviceWorker.ready;
 
         if (Notification.permission === "default") {
           await Notification.requestPermission();

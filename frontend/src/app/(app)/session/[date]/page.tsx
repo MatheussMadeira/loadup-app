@@ -224,7 +224,7 @@ const StyledPage = styled.div`
   flex-direction: column;
   min-height: 100%;
   background-color: ${({ theme }) => theme.colors.background};
-  padding: 24px 0 120px;
+  padding: 24px 0 32px;
 `;
 
 const StyledHeader = styled.header`

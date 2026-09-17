@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import styled from "styled-components";
 
 import { modalEnter, modalOverlay, MODAL_TRANSITION } from "@/lib/animations";
+import { useScrollLock } from "@/hooks/useScrollLock";
 
 interface ModalProps {
   isOpen: boolean;
@@ -20,16 +21,10 @@ export default function Modal({
 }: ModalProps) {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
+  useScrollLock(isOpen);
+
   useEffect(() => {
-    if (isOpen) {
-      closeButtonRef.current?.focus();
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-    return () => {
-      document.body.style.overflow = "";
-    };
+    if (isOpen) closeButtonRef.current?.focus();
   }, [isOpen]);
 
   useEffect(() => {

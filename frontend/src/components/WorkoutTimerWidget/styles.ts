@@ -3,7 +3,7 @@ import styled from "styled-components";
 export const StyledWidget = styled.div`
   position: fixed;
   right: ${({ theme }) => theme.spacing.md};
-  bottom: 96px;
+  bottom: var(--fab-bottom);
   z-index: 90;
   display: flex;
   flex-direction: column;

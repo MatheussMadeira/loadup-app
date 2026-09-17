@@ -9,6 +9,7 @@ import WorkoutShareCard, { WorkoutShareCardProps } from "./WorkoutShareCard";
 import CardBold from "./templates/CardBold";
 import CardMinimal from "./templates/CardMinimal";
 import CardStats from "./templates/CardStats";
+import { useScrollLock } from "@/hooks/useScrollLock";
 
 const TEMPLATES = [
   { id: "stats" as const, label: "Duração", Component: CardStats },
@@ -46,11 +47,9 @@ export default function ShareSheet({
 
   useEffect(() => {
     setMounted(true);
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = "";
-    };
   }, []);
+
+  useScrollLock();
 
   // Revoke the ObjectURL whenever it's replaced to avoid memory leaks
   useEffect(() => {

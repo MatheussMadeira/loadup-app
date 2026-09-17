@@ -29,14 +29,22 @@ export default function AuthLayout({
   );
 }
 
+// html/body nao rolam mais (app shell), entao a tela de auth precisa ser o
+// proprio container de rolagem — caso contrario o formulario fica inacessivel
+// em telas baixas ou com o teclado aberto.
 const StyledPage = styled.div`
-  min-height: 100dvh;
+  height: 100%;
+  min-height: 100%;
   background-color: #1e293b;
   display: flex;
   flex-direction: column;
   align-items: center;
   position: relative;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-top: var(--safe-top);
+  padding-bottom: var(--safe-bottom);
 `;
 
 const GlowBg = styled.div`

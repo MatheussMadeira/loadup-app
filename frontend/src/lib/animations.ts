@@ -1,17 +1,29 @@
 import { keyframes } from "styled-components";
 
 /**
- * Page-level enter: fade-in + slide up from 12px below.
- * Used by PageTransition wrapper on all (app)/* pages.
+ * Page-level enter: fade-in.
+ *
+ * NAO adicione transform/translate/scale/filter aqui. Esta animacao roda com
+ * fill-mode `both` num wrapper que envolve a pagina inteira, entao o valor do
+ * ultimo keyframe fica retido: um `transform: translateY(0)` continua sendo um
+ * transform, e qualquer transform faz o elemento virar containing block dos
+ * descendentes `position: fixed`.
+ *
+ * Na pratica isso quebrava as barras de acao fixas que vivem dentro das
+ * paginas (StyledEditBar, StyledFab, StyledStartBtn do plano de treino) e os
+ * modais full-screen: em vez de se ancorarem no viewport, eles se ancoravam na
+ * caixa do conteudo — que e mais alta que a tela. Resultado: ao rolar, a barra
+ * "descolava" e ficava parada no meio da tela cobrindo o conteudo.
+ *
+ * Se algum dia quisermos o slide de volta, ele tem que ser aplicado num
+ * elemento que comprovadamente nao tenha descendentes `position: fixed`.
  */
 export const pageEnter = keyframes`
   from {
     opacity: 0;
-    transform: translateY(12px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 `;
 

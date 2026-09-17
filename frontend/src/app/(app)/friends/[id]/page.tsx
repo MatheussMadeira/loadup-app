@@ -13,6 +13,7 @@ import { userService } from "@/services/userService";
 import { DayOfWeek } from "@/types";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
+import { useScrollLock } from "@/hooks/useScrollLock";
 const DAY_FULL: Record<string, string> = {
   monday: "Segunda-feira",
   tuesday: "Terça-feira",
@@ -211,12 +212,7 @@ function CopySheet({
 
   const visibleExercises = sourceDay.exercises.slice(0, 4);
   const extraCount = sourceDay.exercises.length - 4;
-  useEffect(() => {
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, []);
+  useScrollLock();
 
   const handleTouchStart = (e: React.TouchEvent) => {
     setStartY(e.touches[0].clientY);
@@ -328,11 +324,11 @@ function CopySheet({
 
 const PageWrapper = styled.div`
   position: relative;
-  min-height: 100vh;
+  min-height: 100%;
   background: ${({ theme }) => theme.colors.background};
   color: ${({ theme }) => theme.colors.onSurface};
   margin: 0 auto;
-  padding-bottom: 120px;
+  padding-bottom: 32px;
   overflow-x: hidden;
 `;
 

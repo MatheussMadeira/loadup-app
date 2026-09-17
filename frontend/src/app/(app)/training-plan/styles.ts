@@ -17,7 +17,7 @@ export const StyledBody = styled.main`
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.md};
   padding: ${({ theme }) => theme.spacing.md};
-  padding-bottom: 96px;
+  padding-bottom: ${({ theme }) => theme.spacing.lg};
 `;
 
 export const StyledSection = styled.section`
@@ -63,7 +63,7 @@ export const StyledErrorText = styled.p`
 
 export const StyledEditBar = styled.div<{ $visible: boolean }>`
   position: fixed;
-  bottom: 65px;
+  bottom: var(--bottom-nav-height);
   left: 0;
   right: 0;
   z-index: 90;

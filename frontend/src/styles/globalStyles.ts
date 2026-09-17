@@ -46,20 +46,62 @@ export const GlobalStyles = createGlobalStyle`
     --c-border: ${({ theme }) => theme.colors.outline};
     --c-border-rgb: ${({ theme }) => hexToRgb(theme.colors.outline)};
     --c-border-alpha: ${({ theme }) => theme.colors.borderAlpha};
+
+    /* ── App chrome (PWA) ────────────────────────────────────────────────
+       Fonte unica de verdade para a altura da barra inferior e para o
+       "piso" de qualquer elemento flutuante. Antes cada tela chutava um
+       numero magico (65px, 80px, 88px, 96px, 12%...) e nenhum deles
+       considerava o safe-area do iPhone, por isso os botoes ficavam
+       parcialmente cobertos pela navegacao. */
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --bottom-nav-content-height: 62px;
+    --bottom-nav-height: calc(
+      var(--bottom-nav-content-height) + var(--safe-bottom)
+    );
+    --floating-gap: 12px;
+    /* Piso para FABs / widgets / barras de acao das telas. */
+    --fab-bottom: calc(var(--bottom-nav-height) + var(--floating-gap));
+  }
+
+  /* ── App shell ──────────────────────────────────────────────────────────
+     O documento nunca rola: quem rola e o container interno (#app-scroll).
+     No iOS (Safari/PWA standalone) o scroll do documento e o que provoca o
+     descolamento de elementos position:fixed — rubber-band, offset entre
+     layout viewport e visual viewport e o status bar translucido deslocam a
+     camada composta da barra inferior, que "gruda" no meio da tela ate o
+     proximo repaint. Sem scroll no documento, position:fixed fica estavel. */
+  html,
+  body {
+    height: 100%;
+    max-height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
   }
 
   html {
-    scroll-behavior: smooth;
     font-size: 16px;
+    /* Evita o iOS inflar fontes ao girar a tela. */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    /* Sem o flash cinza de toque ao tocar em links/botoes no iOS. */
+    -webkit-tap-highlight-color: transparent;
   }
 
   body {
-  font-family: var(--font-barlow-regular), sans-serif;
-  font-weight: 400;    color: ${({ theme }) => theme.colors.onBackground};
-    overflow-x: hidden;
-    min-height: 100dvh;
+    font-family: var(--font-barlow-regular), sans-serif;
+    font-weight: 400;
+    color: ${({ theme }) => theme.colors.onBackground};
+    background-color: ${({ theme }) => theme.colors.background};
+    position: relative;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
+  }
+
+  /* Trava de rolagem usada por modais e bottom sheets (ver useScrollLock). */
+  body[data-scroll-locked="true"] #app-scroll {
+    overflow: hidden !important;
+    touch-action: none;
   }
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-barlow), sans-serif;
@@ -68,6 +110,13 @@ h1, h2, h3, h4, h5, h6 {
   a {
     color: inherit;
     text-decoration: none;
+  }
+
+  button,
+  a,
+  [role="button"] {
+    /* Mata o atraso de ~300ms do duplo-toque no WebKit. */
+    touch-action: manipulation;
   }
 
   button {

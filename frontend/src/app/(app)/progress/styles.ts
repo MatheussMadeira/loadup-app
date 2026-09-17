@@ -10,7 +10,7 @@ export const StyledPage = styled.div`
   flex-direction: column;
   min-height: 100%;
   background: ${({ theme }) => theme.colors.background};
-  padding: 24px 0 140px;
+  padding: 24px 0 32px;
 `;
 
 export const StyledHeader = styled.header`

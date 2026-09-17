@@ -254,10 +254,10 @@ function SaveModal({
 /* ─── Styled Components ─────────────────────────── */
 
 const PageWrapper = styled.div`
-  min-height: 100vh;
+  min-height: 100%;
   background: ${({ theme }) => theme.colors.background};
   margin: 0 auto;
-  padding: 24px 20px 100px;
+  padding: 24px 20px 32px;
   display: flex;
   flex-direction: column;
   gap: 16px;

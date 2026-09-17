@@ -1,0 +1,110 @@
+[
+  {
+    "devices": "iPhone 16 Pro Max",
+    "ptWidth": 440,
+    "ptHeight": 956,
+    "dpr": 3,
+    "width": 1320,
+    "height": 2868,
+    "file": "splash-1320x2868.png"
+  },
+  {
+    "devices": "iPhone 16 Pro",
+    "ptWidth": 402,
+    "ptHeight": 874,
+    "dpr": 3,
+    "width": 1206,
+    "height": 2622,
+    "file": "splash-1206x2622.png"
+  },
+  {
+    "devices": "iPhone 14 Pro Max, 15 Plus, 15 Pro Max, 16 Plus",
+    "ptWidth": 430,
+    "ptHeight": 932,
+    "dpr": 3,
+    "width": 1290,
+    "height": 2796,
+    "file": "splash-1290x2796.png"
+  },
+  {
+    "devices": "iPhone 14 Pro, 15, 15 Pro, 16",
+    "ptWidth": 393,
+    "ptHeight": 852,
+    "dpr": 3,
+    "width": 1179,
+    "height": 2556,
+    "file": "splash-1179x2556.png"
+  },
+  {
+    "devices": "iPhone 12 Pro Max, 13 Pro Max, 14 Plus",
+    "ptWidth": 428,
+    "ptHeight": 926,
+    "dpr": 3,
+    "width": 1284,
+    "height": 2778,
+    "file": "splash-1284x2778.png"
+  },
+  {
+    "devices": "iPhone 12, 12 Pro, 13, 13 Pro, 14",
+    "ptWidth": 390,
+    "ptHeight": 844,
+    "dpr": 3,
+    "width": 1170,
+    "height": 2532,
+    "file": "splash-1170x2532.png"
+  },
+  {
+    "devices": "iPhone 11 Pro Max, XS Max",
+    "ptWidth": 414,
+    "ptHeight": 896,
+    "dpr": 3,
+    "width": 1242,
+    "height": 2688,
+    "file": "splash-1242x2688.png"
+  },
+  {
+    "devices": "iPhone 11, XR",
+    "ptWidth": 414,
+    "ptHeight": 896,
+    "dpr": 2,
+    "width": 828,
+    "height": 1792,
+    "file": "splash-828x1792.png"
+  },
+  {
+    "devices": "iPhone 11 Pro, XS, X",
+    "ptWidth": 375,
+    "ptHeight": 812,
+    "dpr": 3,
+    "width": 1125,
+    "height": 2436,
+    "file": "splash-1125x2436.png"
+  },
+  {
+    "devices": "iPhone 8 Plus, 7 Plus, 6s Plus",
+    "ptWidth": 414,
+    "ptHeight": 736,
+    "dpr": 3,
+    "width": 1242,
+    "height": 2208,
+    "file": "splash-1242x2208.png"
+  },
+  {
+    "devices": "iPhone SE (2a/3a), 8, 7, 6s",
+    "ptWidth": 375,
+    "ptHeight": 667,
+    "dpr": 2,
+    "width": 750,
+    "height": 1334,
+    "file": "splash-750x1334.png"
+  },
+  {
+    "devices": "iPhone SE (1a), 5s",
+    "ptWidth": 320,
+    "ptHeight": 568,
+    "dpr": 2,
+    "width": 640,
+    "height": 1136,
+    "file": "splash-640x1136.png"
+  }
+]

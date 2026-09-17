@@ -1,13 +1,12 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import styled from "styled-components";
 
 import BottomNavBar from "@/components/BottomNavBar";
 import RestTimerWidget from "@/components/RestTimerWidget";
 import WorkoutTimerWidget from "@/components/WorkoutTimerWidget";
-import ThemeToggle from "@/components/ThemeToggle";
 import { RestAlertsProvider } from "@/app/(app)/train/context/RestAlertsContext";
 import { RestTimerProvider } from "@/context/RestTimerContext";
 import { tokenStorage } from "@/lib/tokenStorage";
@@ -15,7 +14,9 @@ import { Toaster } from "sonner";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -23,6 +24,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       router.replace("/login");
     }
   }, [router]);
+
+  // O container de rolagem vive no layout e sobrevive a navegacao, entao ele
+  // manteria o scroll da tela anterior ao trocar de rota (o browser so faz
+  // esse reset sozinho quando quem rola e o documento).
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: 0, behavior: "auto" });
+  }, [pathname]);
 
   if (!mounted || !tokenStorage.get()) {
     return null;
@@ -32,10 +40,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <RestAlertsProvider>
       <RestTimerProvider>
         <StyledWrapper>
-          <StyledContent>{children}</StyledContent>
+          <StyledContent id="app-scroll" ref={scrollRef}>
+            {children}
+          </StyledContent>
           <RestTimerWidget />
           <WorkoutTimerWidget />
-          <StyledThemeToggleWrap></StyledThemeToggleWrap>
           <BottomNavBar />
           <Toaster
             position="top-center"
@@ -55,21 +64,26 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   );
 }
 
+// App shell: a altura e travada no viewport e o unico elemento que rola e o
+// StyledContent. Isso e o que impede o documento de rolar no iOS — que era a
+// origem do bottom nav "descolando" da base da tela.
 const StyledWrapper = styled.div`
-  min-height: 100dvh;
+  height: 100%;
+  max-height: 100%;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 `;
 
 const StyledContent = styled.div`
   flex: 1;
-  padding-top: calc(env(safe-area-inset-top, 0px) + 10px);
-  padding-bottom: 80px;
-`;
-
-const StyledThemeToggleWrap = styled.div`
-  position: fixed;
-  bottom: 96px;
-  left: ${({ theme }) => theme.spacing.md};
-  z-index: 200;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  scroll-behavior: smooth;
+  padding-top: calc(var(--safe-top) + 10px);
+  /* Espaco pro conteudo rolar por baixo da barra inferior sem ficar coberto. */
+  padding-bottom: var(--bottom-nav-height);
 `;

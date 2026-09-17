@@ -10,7 +10,8 @@ export const StyledPage = styled.div`
   flex-direction: column;
   min-height: 100%;
   background: ${({ theme }) => theme.colors.background};
-  padding-bottom: 180px;
+  /* Espaco para a StyledEditBar / StyledStartBtn fixas desta tela. */
+  padding-bottom: 100px;
 `;
 
 export const StyledStatsRow = styled.div`
@@ -107,7 +108,7 @@ export const StyledSkeletonCard = styled.div`
 
 export const StyledFab = styled.button`
   position: fixed;
-  bottom: 88px;
+  bottom: var(--fab-bottom);
   right: 20px;
   width: 52px;
   height: 52px;
@@ -130,7 +131,7 @@ export const StyledFab = styled.button`
 
 export const StyledEditBar = styled.div<{ $visible: boolean }>`
   position: fixed;
-  bottom: 65px;
+  bottom: var(--bottom-nav-height);
   left: 0;
   right: 0;
   z-index: 90;
@@ -181,7 +182,7 @@ export const StyledConcluirBtn = styled.button`
 
 export const StyledStartBtn = styled.button`
   position: fixed;
-  bottom: 80px;
+  bottom: var(--fab-bottom);
   left: 16px;
   right: 80px;
   height: 52px;

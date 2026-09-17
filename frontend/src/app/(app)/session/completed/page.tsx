@@ -285,18 +285,21 @@ export default function CompletedWorkoutPage() {
 
 const PageWrapper = styled.div`
   position: relative;
-  min-height: 100vh;
+  min-height: 100%;
   background: ${({ theme }) => theme.colors.background};
   color: ${({ theme }) => theme.colors.onSurface};
   margin: 0 auto;
   overflow-x: hidden;
-  padding-bottom: 160px;
+  /* Altura da BottomBar fixa desta tela (compartilhar + CTA + voltar). */
+  padding-bottom: 190px;
 `;
 
 const GreenGlow = styled.div`
   pointer-events: none;
   position: absolute;
   top: 0;
+  left: 0;
+  right: 0;
   height: 320px;
   background: radial-gradient(
     ellipse at 50% 0%,
@@ -552,12 +555,14 @@ const Divider = styled.div`
 
 const BottomBar = styled.div`
   position: fixed;
-  bottom: 0;
+  /* Encosta no topo do bottom nav em vez de tentar acertar o offset no
+     olho: antes o "Ver historico completo" ficava por baixo da nav. */
+  bottom: var(--bottom-nav-height);
   left: 50%;
   transform: translateX(-50%);
   width: 100%;
-  padding: 16px 24px 32px;
-  margin-bottom: 30px;
+  padding: 16px 24px 20px;
+  z-index: 90;
   background: linear-gradient(
     to bottom,
     transparent 0%,
