@@ -1,5 +1,5 @@
 import { strings } from "@/constants/strings";
-import { DayOfWeek, SeriesType } from "@/types";
+import { DayOfWeek, LoggedSet, SeriesType } from "@/types";
 
 export type AppView = "tabs" | "intro" | "session";
 export type ActiveTab = "iniciar" | "historico";
@@ -39,6 +39,28 @@ export const SERIES_COLOR: Record<SeriesType, { bg: string; text: string }> = {
 export function todayIso(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+// Fallback de "última série no treino de hoje" para pré-preencher peso/reps/descanso
+// quando não há sugestão nem histórico de progressão. Precisa casar o seriesType —
+// sem isso o peso de uma série de aquecimento pode vazar para uma série de trabalho.
+export function findLastSameTypeRecord(
+  records: LoggedSet[] | undefined,
+  exerciseName: string,
+  seriesType: SeriesType,
+  beforeSeriesOrder: number,
+): LoggedSet | null {
+  if (!records) return null;
+  return (
+    records
+      .filter(
+        (r) =>
+          r.exerciseName === exerciseName &&
+          r.seriesType === seriesType &&
+          r.seriesOrder < beforeSeriesOrder,
+      )
+      .sort((a, b) => b.seriesOrder - a.seriesOrder)[0] ?? null
+  );
 }
 
 export function todayDayOfWeek(): DayOfWeek {

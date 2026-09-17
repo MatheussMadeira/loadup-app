@@ -24,7 +24,7 @@ import { useDelayedFlag } from "@/hooks/useDelayedFlag";
 import { resolveDisplayValue } from "@/lib/resolveDisplayValue";
 import RepRangeAlertSheet from "../RepRangeAlertSheet";
 
-import { DAY_FULL, todayIso } from "../../utils";
+import { DAY_FULL, findLastSameTypeRecord, todayIso } from "../../utils";
 import RestTimerOverlay from "../RestTimerButton";
 import SeriesInputRow, { SeriesInputRowHandle } from "../SeriesInputRow";
 import SessionEditDrawer from "../SessionEditDrawer";
@@ -257,16 +257,19 @@ export default function SessionView({
     );
   }, [sessionData, currentExercise, currentSeriesIndex]);
 
+  // Só serve de fallback se for da MESMA série (type) — senão o peso/reps de
+  // um aquecimento vaza pra prévia de uma série de trabalho, por exemplo.
   const previousSeriesRecord = useMemo(() => {
-    if (!sessionData || !currentExercise || currentSeriesIndex === 0) return null;
-    return (
-      sessionData.records?.find(
-        (r) =>
-          r.exerciseName === currentExercise.name &&
-          r.seriesOrder === currentSeriesIndex,
-      ) ?? null
+    if (!sessionData || !currentExercise || !currentSeries || currentSeriesIndex === 0) {
+      return null;
+    }
+    return findLastSameTypeRecord(
+      sessionData.records,
+      currentExercise.name,
+      currentSeries.type,
+      currentSeriesIndex + 1,
     );
-  }, [sessionData, currentExercise, currentSeriesIndex]);
+  }, [sessionData, currentExercise, currentSeries, currentSeriesIndex]);
 
   const previousSeriesWeight = previousSeriesRecord?.weight ?? null;
   const previousSeriesReps = previousSeriesRecord?.repsCompleted ?? null;
@@ -425,13 +428,16 @@ export default function SessionView({
               r.exerciseName === nextTarget.exerciseName &&
               r.seriesOrder === nextTarget.seriesOrder,
           );
+          // Só serve de fallback se for da MESMA série (type) — senão o peso
+          // de um aquecimento vaza pra prévia de uma série de trabalho.
           const previousRecord = hasMoreSeries
-            ? sessionData?.records?.find(
-                (r) =>
-                  r.exerciseName === exercise.name &&
-                  r.seriesOrder === currentSeriesIndex + 1,
+            ? findLastSameTypeRecord(
+                sessionData?.records,
+                exercise.name,
+                nextTarget.series.type,
+                nextTarget.seriesOrder,
               )
-            : undefined;
+            : null;
 
           lastWeight = await resolveLastWeight(
             nextTarget.exerciseName,

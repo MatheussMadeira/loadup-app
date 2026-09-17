@@ -69,6 +69,8 @@ const StyledNav = styled.nav`
   /* Mantem a barra na propria camada composta: no WebKit isso evita o
      repaint atrasado que fazia a barra "grudar" no meio da tela. */
   transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  will-change: transform;
   z-index: 100;
 `;
 
