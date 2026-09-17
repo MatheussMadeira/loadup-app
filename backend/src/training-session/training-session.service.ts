@@ -13,6 +13,8 @@ import {
   TrainingSheetDocument,
 } from '../training-sheet/schemas/training-sheet.schema';
 import { PlateauAlert, PlateauAlertDocument } from '../plateau/schemas/plateau-alert.schema';
+import { PlateauService } from '../plateau/plateau.service';
+import { PlateauAlertItemDto } from '../plateau/dto/plateau-alert.dto';
 import { getDayOfWeek, getSaoPauloStartOfDayUtc } from '../common/utils/timezone.util';
 import { toObjectId } from '../common/utils/object-id.util';
 import { EventEmitter2 } from '@nestjs/event-emitter';
@@ -42,6 +44,7 @@ export class TrainingSessionService {
     private readonly trainingSheetModel: Model<TrainingSheetDocument>,
     @InjectModel(PlateauAlert.name)
     private readonly plateauAlertModel: Model<PlateauAlertDocument>,
+    private readonly plateauService: PlateauService,
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
@@ -156,7 +159,11 @@ export class TrainingSessionService {
       repsCompleted: number;
       restTime: number;
     },
-  ): Promise<{ session: TrainingSessionDocument; repRangeAlert: RepRangeAlert | null }> {
+  ): Promise<{
+    session: TrainingSessionDocument;
+    repRangeAlert: RepRangeAlert | null;
+    plateauAlert: PlateauAlertItemDto | null;
+  }> {
     const session = await this.getTrainingSession(userId, sessionId);
     if (session.status === 'skipped') {
       throw new ConflictException('Cannot record sets for a skipped session');
@@ -175,7 +182,11 @@ export class TrainingSessionService {
       ? await this.checkRepRangeAlert(userId, saved, payload.exerciseName)
       : null;
 
-    return { session: saved, repRangeAlert };
+    const plateauAlert = payload.seriesType === 'working'
+      ? await this.plateauService.checkExerciseOnRecord(userId, payload.exerciseName)
+      : null;
+
+    return { session: saved, repRangeAlert, plateauAlert };
   }
 
   async updateSessionRecord(

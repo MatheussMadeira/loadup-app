@@ -45,10 +45,6 @@ export type {
   ProgressionSummary,
 } from "./progression";
 
-export type {
-  PlateauAlert,
-  PlateauAlertWithMuscleGroup,
-  PlateauAlertsResponse,
-} from "./plateau";
+export type { PlateauAlert, PlateauAlertsResponse } from "./plateau";
 
 export type { SearchResult, CsvImportError } from "./exerciseSearch";

@@ -34,33 +34,7 @@ export const StyledModal = styled.div`
     max-height: min(90vh, calc(100vh - 12px));
   }
 `;
-export const Toast = styled.div`
-  position: sticky;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  margin-top: ${({ theme }) => theme.spacing.md};
-  padding: 12px 16px;
-  border-radius: ${({ theme }) => theme.borderRadius.chip};
-  background: ${({ theme }) => theme.colors.primary};
-  color: ${({ theme }) => theme.colors.onPrimary};
-  font-family: var(--font-inter), sans-serif;
-  font-size: 13px;
-  font-weight: 500;
-  text-align: center;
-  animation: slideUp 200ms ease;
 
-  @keyframes slideUp {
-    from {
-      opacity: 0;
-      transform: translateY(8px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-`;
 export const Header = styled.div`
   display: flex;
   justify-content: space-between;
@@ -98,12 +72,6 @@ export const CloseButton = styled.button`
   }
 `;
 
-export const Subtitle = styled.p`
-  margin: 0 0 ${({ theme }) => theme.spacing.md} 0;
-  font-size: ${({ theme }) => theme.typography.bodyMedium.fontSize};
-  color: ${({ theme }) => theme.colors.onSurfaceMuted};
-`;
-
 export const DismissAllLink = styled.button`
   align-self: flex-end;
   background: none;
@@ -120,109 +88,16 @@ export const DismissAllLink = styled.button`
     color: ${({ theme }) => theme.colors.primaryStrong};
   }
 
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+
   &:focus-visible {
     outline: 2px solid ${({ theme }) => theme.colors.primary};
     outline-offset: 2px;
     border-radius: 2px;
   }
-`;
-
-export const AlertList = styled.ul`
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  flex: 1;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.md};
-
-  &::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: transparent;
-    border-radius: 3px;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background: ${({ theme }) => theme.colors.outlineVariant};
-    border-radius: 3px;
-
-    &:hover {
-      background: ${({ theme }) => theme.colors.outline};
-    }
-  }
-`;
-
-export const AlertListItem = styled.li<{ style?: React.CSSProperties }>`
-  animation: slideIn 300ms ease-out;
-  animation-delay: calc(var(--index, 0) * 50ms);
-
-  @keyframes slideIn {
-    from {
-      opacity: 0;
-      transform: translateY(10px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-`;
-export const TabBar = styled.div`
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  position: relative;
-  margin-bottom: ${({ theme }) => theme.spacing.md};
-  border-bottom: 2px solid ${({ theme }) => theme.colors.outlineVariant};
-`;
-
-export const TabBtn = styled.button<{ $active: boolean }>`
-  background: transparent;
-  color: ${({ theme, $active }) =>
-    $active ? theme.colors.primary : theme.colors.onSurfaceMuted};
-  border: none;
-  padding: 12px;
-  font-family: var(--font-barlow), sans-serif;
-  font-weight: 600;
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  transition: color 200ms ease;
-  position: relative;
-  z-index: 1;
-
-  span {
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    background: ${({ theme }) => theme.colors.primary};
-    color: white;
-    font-size: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-`;
-
-export const TabIndicator = styled.div<{ $index: number }>`
-  position: absolute;
-  bottom: -2px;
-  left: 0;
-  height: 2px;
-  width: 50%;
-  background: ${({ theme }) => theme.colors.primary};
-  border-radius: 999px;
-  transform: translateX(${({ $index }) => $index * 100}%);
-  transition: transform 250ms cubic-bezier(0.34, 1.56, 0.64, 1);
-  box-shadow: 0 0 8px ${({ theme }) => theme.colors.primary}80;
 `;
 
 export const NotifList = styled.div`

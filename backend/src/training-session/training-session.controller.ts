@@ -36,12 +36,12 @@ export class TrainingSessionController {
     @Param('sessionId') sessionId: string,
     @Body() recordDto: RecordSetDto,
   ) {
-    const { session, repRangeAlert } = await this.trainingSessionService.addRecordToSession(
+    const { session, repRangeAlert, plateauAlert } = await this.trainingSessionService.addRecordToSession(
       userId,
       sessionId,
       recordDto,
     );
-    return { session, repRangeAlert };
+    return { session, repRangeAlert, plateauAlert };
   }
 
   @Get('today')

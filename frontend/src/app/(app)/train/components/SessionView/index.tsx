@@ -16,12 +16,15 @@ import {
   useTodaySession,
 } from "@/hooks/useSession";
 import MuscleChip from "@/components/MuscleChip";
-import { DayOfWeek, RepRangeAlert, Series, SeriesType, TrainingDay } from "@/types";
+import { DayOfWeek, PlateauAlert, RepRangeAlert, Series, SeriesType, TrainingDay } from "@/types";
 import { trainingSheetService } from "@/services/trainingSheetService";
 import { progressionService } from "@/services/progressionService";
+import { actionAlert as actionPlateauAlert } from "@/services/plateauService";
 import { NextExercisePreview, useRestTimer } from "@/context/RestTimerContext";
 import { useDelayedFlag } from "@/hooks/useDelayedFlag";
+import { usePlateauExerciseSet } from "@/hooks/usePlateauExerciseSet";
 import { resolveDisplayValue } from "@/lib/resolveDisplayValue";
+import PlateauAlertSheet from "../PlateauAlertSheet";
 import RepRangeAlertSheet from "../RepRangeAlertSheet";
 
 import { DAY_FULL, findLastSameTypeRecord, todayIso } from "../../utils";
@@ -48,8 +51,11 @@ import {
   StyledExerciseNum,
   StyledExerciseSection,
   StyledExerciseSkeleton,
+  StyledExerciseNameRow,
   StyledMenuBtn,
+  StyledNewWeightBadge,
   StyledProgressBadge,
+  StyledStagnantDot,
   StyledSeriesList,
   StyledSeriesProgressDot,
   StyledSeriesProgressDots,
@@ -74,6 +80,13 @@ const SERIES_TYPE_LABEL: Record<SeriesType, string> = {
   adjustment: "ADAPTAÇÃO",
 };
 
+// Teto de espera pelo resultado do registro de série antes de desistir de
+// aguardar um eventual alerta de platô e seguir o fluxo normal — protege
+// contra rede ruim travando o avanço indefinidamente.
+function waitFor(ms: number): Promise<null> {
+  return new Promise((resolve) => setTimeout(() => resolve(null), ms));
+}
+
 export default function SessionView({
   dayOfWeek,
   sheetDay,
@@ -82,6 +95,7 @@ export default function SessionView({
   const router = useRouter();
   const queryClient = useQueryClient();
   const session = useTodaySession();
+  const stagnantExercises = usePlateauExerciseSet();
   const createSession = useCreateSession();
   const [createAttempted, setCreateAttempted] = useState(false);
   const {
@@ -107,8 +121,16 @@ export default function SessionView({
   // série que vai ficar ativa a seguir — evita que o input recalcule do zero
   // e possivelmente divirja do que o card acabou de mostrar durante o descanso.
   const [resolvedNextWeight, setResolvedNextWeight] = useState<number | null>(null);
-  const [repRangeAlert, setRepRangeAlert] = useState<RepRangeAlert | null>(null);
+  // Platô "capturado" ao registrar a série atual: trava o avanço pro
+  // descanso até o usuário resolver (ajustar peso ou dispensar) — ver
+  // handleSeriesConclude/handlePlateauResolve.
+  const [pendingPlateauAlert, setPendingPlateauAlert] = useState<{
+    alert: PlateauAlert;
+    restTime: number;
+    weight: number;
+  } | null>(null);
   const [endOfSessionAlerts, setEndOfSessionAlerts] = useState<RepRangeAlert[]>([]);
+  const [endOfSessionAlertTotal, setEndOfSessionAlertTotal] = useState(0);
   const [suggestedWeightAlert, setSuggestedWeightAlert] = useState<{
     exerciseId: string;
     seriesOrder: number;
@@ -281,15 +303,20 @@ export default function SessionView({
       {
         onSuccess: (data) => {
           if (data.repRangeAlerts?.length) {
+            // Segura a navegação pra tela de concluído até esses alertas
+            // serem resolvidos — ver TrainPage (view !== "session") e o
+            // router.push no fim da fila em handleAlertConfirm/Dismiss.
+            setEndOfSessionAlertTotal(data.repRangeAlerts.length);
             setEndOfSessionAlerts(data.repRangeAlerts);
           } else {
             toast.success("Treino concluído!");
+            router.push("/session/completed");
           }
         },
         onError: () => toast.error("Erro ao concluir treino. Tente novamente."),
       },
     );
-  }, [completeSession]);
+  }, [completeSession, router]);
 
   const handleDismissRest = useCallback(() => {
     setShowRestTimer(false);
@@ -297,16 +324,17 @@ export default function SessionView({
     stopRestTimer();
   }, [stopRestTimer]);
 
-  const handleRepRangeAlert = useCallback(
-    (alert: RepRangeAlert, weight: number) => {
-      setRepRangeAlert(alert);
-    },
-    [],
-  );
+  const advanceEndOfSessionQueue = useCallback(() => {
+    setEndOfSessionAlerts((prev) => {
+      const next = prev.slice(1);
+      if (next.length === 0) router.push("/session/completed");
+      return next;
+    });
+  }, [router]);
 
   const handleAlertConfirm = useCallback(
     async (newWeight: number) => {
-      const alert = repRangeAlert ?? endOfSessionAlerts[0];
+      const alert = endOfSessionAlerts[0];
       if (!alert) return;
 
       const exercise = exercises.find((ex) => ex.name === alert.exerciseName);
@@ -324,22 +352,14 @@ export default function SessionView({
         );
       }
 
-      if (repRangeAlert) {
-        setRepRangeAlert(null);
-      } else {
-        setEndOfSessionAlerts((prev) => prev.slice(1));
-      }
+      advanceEndOfSessionQueue();
     },
-    [repRangeAlert, endOfSessionAlerts, exercises, dayOfWeek],
+    [endOfSessionAlerts, exercises, dayOfWeek, advanceEndOfSessionQueue],
   );
 
   const handleAlertDismiss = useCallback(() => {
-    if (repRangeAlert) {
-      setRepRangeAlert(null);
-    } else {
-      setEndOfSessionAlerts((prev) => prev.slice(1));
-    }
-  }, [repRangeAlert]);
+    advanceEndOfSessionQueue();
+  }, [advanceEndOfSessionQueue]);
 
   const resolveLastWeight = useCallback(
     async (
@@ -485,6 +505,44 @@ export default function SessionView({
     ],
   );
 
+  // Resolve o platô "capturado" no registro que acabou de acontecer: ajusta
+  // o peso sugerido (marcado como novo) ou só dispensa, e só então segue pro
+  // fluxo normal de avanço/descanso que ficou represado em
+  // handleSeriesConclude.
+  const handlePlateauResolve = useCallback(
+    async (newWeight?: number) => {
+      const pending = pendingPlateauAlert;
+      setPendingPlateauAlert(null);
+      if (!pending) return;
+
+      setIsAdvancing(true);
+      try {
+        if (newWeight != null) {
+          const exercise = exercises[currentExerciseIndex];
+          if (exercise) {
+            const workingSeriesOrders = exercise.series
+              .map((s, idx) => ({ type: s.type, seriesOrder: idx + 1 }))
+              .filter((s) => s.type === "working")
+              .map(({ seriesOrder }) => ({ seriesOrder, suggestedWeight: newWeight }));
+            await Promise.all([
+              trainingSheetService.bulkUpdateSuggestedWeight(
+                dayOfWeek,
+                exercise._id,
+                workingSeriesOrders,
+                true,
+              ),
+              actionPlateauAlert(pending.alert._id, newWeight),
+            ]);
+          }
+        }
+        await advanceAfterSeries(pending.restTime);
+      } finally {
+        setIsAdvancing(false);
+      }
+    },
+    [pendingPlateauAlert, exercises, currentExerciseIndex, dayOfWeek, advanceAfterSeries],
+  );
+
   const handleSeriesConclude = async () => {
     if (isAdvancing || !seriesInputRef.current) return;
     setIsAdvancing(true);
@@ -492,6 +550,22 @@ export default function SessionView({
       const ok = await seriesInputRef.current.check();
       if (!ok) return;
       const restTime = seriesInputRef.current.getRestTime();
+
+      // Só uma série de trabalho recém-registrada tem promise pendente (o
+      // backend só calcula plateauAlert nesse caso) — espera só por ela, com
+      // teto de 1.2s, sem reintroduzir espera de rede pras demais séries.
+      const pending = seriesInputRef.current.getPendingRecordResult();
+      const result = pending ? await Promise.race([pending, waitFor(1200)]) : null;
+
+      if (result?.plateauAlert) {
+        setPendingPlateauAlert({
+          alert: result.plateauAlert,
+          restTime,
+          weight: seriesInputRef.current.getWeight(),
+        });
+        return;
+      }
+
       await advanceAfterSeries(restTime);
     } finally {
       setIsAdvancing(false);
@@ -567,9 +641,18 @@ export default function SessionView({
           <StyledSeriesTypeBadgeFocus>
             {SERIES_TYPE_LABEL[currentSeries.type]}
           </StyledSeriesTypeBadgeFocus>
-          <StyledExerciseNameFocus>
-            {currentExercise.name}
-          </StyledExerciseNameFocus>
+          <StyledExerciseNameRow>
+            <StyledExerciseNameFocus>
+              {currentExercise.name}
+            </StyledExerciseNameFocus>
+            {currentSeries.suggestedWeightIsNew ? (
+              <StyledNewWeightBadge>Peso novo</StyledNewWeightBadge>
+            ) : (
+              stagnantExercises.has(currentExercise.name) && (
+                <StyledStagnantDot aria-label="Estagnado neste exercício" />
+              )
+            )}
+          </StyledExerciseNameRow>
           <StyledExerciseMuscleFocus>
             {currentExercise.muscleGroup}
           </StyledExerciseMuscleFocus>
@@ -584,7 +667,6 @@ export default function SessionView({
             loggedSet={loggedSet}
             isReadOnly={false}
             inputsOnly
-            onRepRangeAlert={handleRepRangeAlert}
             resolvedWeight={resolvedNextWeight}
             previousWeight={previousSeriesWeight}
             previousReps={previousSeriesReps}
@@ -746,12 +828,26 @@ export default function SessionView({
             />
           )}
 
-          {(repRangeAlert ?? endOfSessionAlerts[0]) && (
+          {endOfSessionAlerts[0] && (
             <RepRangeAlertSheet
-              alert={(repRangeAlert ?? endOfSessionAlerts[0])!}
+              alert={endOfSessionAlerts[0]}
               currentWeight={seriesInputRef.current?.getWeight() ?? 0}
               onConfirm={(w) => { void handleAlertConfirm(w); }}
               onDismiss={handleAlertDismiss}
+              queueLabel={
+                endOfSessionAlertTotal > 1
+                  ? `${endOfSessionAlertTotal - endOfSessionAlerts.length + 1} de ${endOfSessionAlertTotal}`
+                  : undefined
+              }
+            />
+          )}
+
+          {pendingPlateauAlert && (
+            <PlateauAlertSheet
+              alert={pendingPlateauAlert.alert}
+              currentWeight={pendingPlateauAlert.weight}
+              onConfirm={(w) => { void handlePlateauResolve(w); }}
+              onDismiss={() => { void handlePlateauResolve(); }}
             />
           )}
 

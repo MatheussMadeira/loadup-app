@@ -82,13 +82,18 @@ export class ExercisesController {
     @CurrentUser('id') userId: string,
     @Param('dayOfWeek') dayOfWeek: string,
     @Param('exerciseId') exerciseId: string,
-    @Body() body: { updates: Array<{ seriesOrder: number; suggestedWeight: number | null }> },
+    @Body()
+    body: {
+      updates: Array<{ seriesOrder: number; suggestedWeight: number | null }>;
+      markAsNew?: boolean;
+    },
   ) {
     return this.exercisesService.bulkUpdateSuggestedWeight(
       userId,
       dayOfWeek.toLowerCase(),
       exerciseId,
       body.updates,
+      body.markAsNew ?? false,
     );
   }
 

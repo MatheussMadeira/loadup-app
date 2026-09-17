@@ -1,4 +1,5 @@
 import { SeriesType } from "./trainingSheet";
+import { PlateauAlert } from "./plateau";
 
 export type SessionStatus = "partial" | "active" | "completed" | "skipped";
 
@@ -48,6 +49,7 @@ export interface AddRecordPayload {
 export interface AddRecordResponse {
   session: TrainingSession;
   repRangeAlert: RepRangeAlert | null;
+  plateauAlert: PlateauAlert | null;
 }
 
 export interface CompleteSessionResponse {

@@ -6,7 +6,7 @@ import {
   TrainingSession,
   TrainingSessionDocument,
 } from '../training-session/schemas/training-session.schema';
-import { PlateauAnalyzer, SessionSnapshot } from './plateau.analyzer';
+import { PlateauAnalyzer, PlateauAnalysisResult, SessionSnapshot } from './plateau.analyzer';
 import { PlateauAlertItemDto, ExercisePlateauStatusDto } from './dto/plateau-alert.dto';
 import { toObjectId } from '../common/utils/object-id.util';
 
@@ -38,6 +38,108 @@ export class PlateauService {
     return DEFAULT_SUGGESTIONS[randomIndex];
   }
 
+  private async upsertExerciseAlert(
+    userId: string,
+    result: PlateauAnalysisResult,
+  ): Promise<PlateauAlertDocument> {
+    return this.alertModel
+      .findOneAndUpdate(
+        { userId: toObjectId(userId), exerciseName: result.exerciseName, alertType: 'exercise' },
+        {
+          $set: {
+            dayOfWeek: result.dayOfWeek,
+            suggestion: result.suggestion,
+            sessionCount: result.consecutiveCount,
+            active: result.isInPlateau,
+            resolvedAt: result.isInPlateau ? null : new Date(),
+          },
+          $setOnInsert: { detectedAt: new Date() },
+        },
+        { upsert: true, new: true },
+      )
+      .exec();
+  }
+
+  /**
+   * Roda a mesma análise de platô, mas restrita a um único exercício, logo
+   * apos uma série de trabalho ser registrada — em vez de esperar a sessão
+   * inteira terminar (`runDetectionForUser`, abaixo). É o que permite o
+   * modal de platô aparecer durante o treino, na hora certa.
+   */
+  async checkExerciseOnRecord(
+    userId: string,
+    exerciseName: string,
+  ): Promise<PlateauAlertItemDto | null> {
+    const sessions = await this.sessionModel
+      .find({
+        userId: toObjectId(userId),
+        'records.exerciseName': exerciseName,
+        'records.seriesType': 'working',
+      })
+      .sort({ date: -1 })
+      .limit(30)
+      .lean()
+      .exec();
+
+    const snapshots: SessionSnapshot[] = [];
+    for (const session of sessions) {
+      for (const record of session.records ?? []) {
+        if (record.seriesType !== 'working' || record.exerciseName !== exerciseName) continue;
+        snapshots.push({
+          exerciseName: record.exerciseName,
+          dayOfWeek: session.dayOfWeek,
+          date: session.date,
+          weight: record.weight,
+          reps: record.repsCompleted,
+        });
+      }
+    }
+
+    const [result] = this.analyzer.analyze(snapshots);
+    if (!result) return null;
+
+    const doc = await this.upsertExerciseAlert(userId, result);
+    if (!doc.active) return null;
+
+    return {
+      _id: doc._id.toString(),
+      exerciseName: doc.exerciseName,
+      dayOfWeek: doc.dayOfWeek,
+      alertType: doc.alertType,
+      suggestion: doc.suggestion || this.getDefaultSuggestion(),
+      sessionCount: doc.sessionCount,
+      detectedAt: doc.detectedAt,
+      active: doc.active,
+    };
+  }
+
+  /** Marca que o modal foi de fato mostrado ao usuário (idempotente). */
+  async markPresented(userId: string, alertId: string): Promise<void> {
+    await this.alertModel
+      .updateOne(
+        { _id: toObjectId(alertId), userId: toObjectId(userId), presentedAt: null },
+        { $set: { presentedAt: new Date() } },
+      )
+      .exec();
+  }
+
+  /** Usuário confirmou um novo peso a partir do alerta — resolve o platô. */
+  async actionAlert(userId: string, alertId: string, weight: number): Promise<void> {
+    await this.alertModel
+      .updateOne(
+        { _id: toObjectId(alertId), userId: toObjectId(userId) },
+        {
+          $set: {
+            active: false,
+            resolvedAt: new Date(),
+            actionedAt: new Date(),
+            actionedWeight: weight,
+          },
+        },
+      )
+      .exec();
+  }
+
   async runDetectionForUser(userId: string): Promise<void> {
     const sessions = await this.sessionModel
       .find({ userId: toObjectId(userId) })
@@ -62,22 +164,7 @@ export class PlateauService {
     const results = this.analyzer.analyze(snapshots);
 
     for (const result of results) {
-      await this.alertModel
-        .findOneAndUpdate(
-          { userId: toObjectId(userId), exerciseName: result.exerciseName, alertType: 'exercise' },
-          {
-            $set: {
-              dayOfWeek: result.dayOfWeek,
-              suggestion: result.suggestion,
-              sessionCount: result.consecutiveCount,
-              active: result.isInPlateau,
-              resolvedAt: result.isInPlateau ? null : new Date(),
-            },
-            $setOnInsert: { detectedAt: new Date() },
-          },
-          { upsert: true, new: true },
-        )
-        .exec();
+      await this.upsertExerciseAlert(userId, result);
     }
 
     // Day-level aggregation

@@ -22,14 +22,21 @@ export default function TrainPage() {
   const todayDow = todayDayOfWeek();
   const todaySheetDay = sheet.data?.days.find((d) => d.dayOfWeek === todayDow);
 
+  // So redireciona sozinho quando a sessão já estava concluída ao carregar
+  // (ex.: usuário abriu /train de novo depois de terminar). Enquanto
+  // view === "session", é a própria SessionView que decide a hora de navegar
+  // pra /session/completed — ela pode ter alertas de fim de sessão pra
+  // mostrar antes, e essa navegação automática derrubava o componente (e o
+  // alerta) no meio disso.
   useEffect(() => {
     if (
-      todaySession.data?.status === "completed" ||
-      todaySession.data?.status === "skipped"
+      view !== "session" &&
+      (todaySession.data?.status === "completed" ||
+        todaySession.data?.status === "skipped")
     ) {
       router.push("/session/completed");
     }
-  }, [todaySession.data, router]);
+  }, [view, todaySession.data, router]);
 
   useEffect(() => {
     if (!sheet.data || todaySheetDay?.status !== "training") return;

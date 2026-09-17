@@ -6,10 +6,9 @@ import { useRouter } from "next/navigation";
 
 import EmptyState from "@/components/EmptyState";
 import PageTransition from "@/components/PageTransition";
-import { PlateauAlertsModal } from "@/components/PlateauAlertsModal";
+import { NotificationsModal } from "@/components/NotificationsModal";
 import { strings } from "@/constants/strings";
 import { useLogout } from "@/hooks/useAuth";
-import { usePlateauAlerts } from "@/hooks/usePlateauAlerts";
 import {
   useMonthlyCalendar,
   useTodayCalendar,
@@ -48,8 +47,6 @@ export default function HomePage() {
   const userName = authService.getName() || strings.common.defaultUserName;
   const now = new Date();
 
-  // Plateau alerts
-  const { activeAlerts, dismiss, dismissAll } = usePlateauAlerts();
   const [modalOpen, setModalOpen] = useState(false);
 
   const today = useTodayCalendar();
@@ -150,8 +147,7 @@ export default function HomePage() {
             userName={userName}
             summary={progression.data}
             weeklyCompleted={weeklyCompleted}
-            alertCount={activeAlerts.length}
-            onAlertBellClick={() => setModalOpen(true)}
+            onBellClick={() => setModalOpen(true)}
             onLogout={logout}
           />
           <StyledBody>
@@ -255,17 +251,9 @@ export default function HomePage() {
           todayLabel={todayDow ? DAY_FULL_LABELS[todayDow] : "hoje"}
         />
       </PageTransition>
-      <PlateauAlertsModal
+      <NotificationsModal
         isOpen={modalOpen}
-        alerts={activeAlerts}
         onClose={() => setModalOpen(false)}
-        onDismiss={(id) => {
-          dismiss(id);
-        }}
-        onDismissAll={() => {
-          dismissAll();
-          setModalOpen(false);
-        }}
       />
     </>
   );

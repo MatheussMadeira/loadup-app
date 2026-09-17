@@ -19,5 +19,6 @@ import { PlateauController } from './plateau.controller';
   ],
   controllers: [PlateauController],
   providers: [PlateauAnalyzer, PlateauService, SessionCompletedListener],
+  exports: [PlateauService],
 })
 export class PlateauModule {}

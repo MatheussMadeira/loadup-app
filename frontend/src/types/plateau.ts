@@ -1,10 +1,7 @@
 /**
  * Plateau Alerts Type Definitions
- * Describes the structure of plateau alerts from the backend
- * and client-side augmented data.
+ * Describes the structure of plateau alerts from the backend.
  */
-
-import type { MuscleGroup } from "./trainingSheet";
 
 /**
  * PlateauAlert - Response from GET /plateau/alerts
@@ -27,15 +24,6 @@ export interface PlateauAlert {
   detectedAt: string;
   /** Whether alert is still active */
   active: boolean;
-}
-
-/**
- * PlateauAlertWithMuscleGroup - Client-side augmented alert
- * Extends PlateauAlert with muscle group resolved from training sheet.
- */
-export interface PlateauAlertWithMuscleGroup extends PlateauAlert {
-  /** Muscle group resolved from training sheet (optional if not found) */
-  muscleGroup?: MuscleGroup;
 }
 
 /**

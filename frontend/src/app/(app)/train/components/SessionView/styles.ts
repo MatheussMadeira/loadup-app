@@ -487,6 +487,38 @@ export const StyledExerciseMuscleFocus = styled.span`
   text-transform: uppercase;
 `;
 
+export const StyledExerciseNameRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+`;
+
+/** Peso sugerido acabou de ser ajustado por um alerta de platô. */
+export const StyledNewWeightBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: ${({ theme }) => theme.borderRadius.pill};
+  background: ${({ theme }) => theme.colors.primaryContainer};
+  color: ${({ theme }) => theme.colors.primary};
+  font-family: "Barlow Condensed", Inter, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+`;
+
+/** Exercício com platô ativo (usuário dispensou o alerta sem ajustar o peso). */
+export const StyledStagnantDot = styled.span`
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: ${({ theme }) => theme.colors.onSurfaceMuted};
+  flex-shrink: 0;
+`;
+
 export const StyledSeriesProgressDots = styled.div`
   display: flex;
   justify-content: center;

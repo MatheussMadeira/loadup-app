@@ -273,18 +273,6 @@ export const strings = {
     ariaGoBack: "Voltar",
   },
 
-  plateau: {
-    title: "Alertas de Platô",
-    subtitle: "Exercícios sem evolução detectados pelo sistema",
-    markAllRead: "Marcar todos como lidos",
-    markRead: "Marcar como lido",
-    detected: "Detectado em",
-    noProgress: "Sem evolução",
-    sessions: "sessões sem evolução",
-    fetchError: "Erro ao carregar alertas",
-    retry: "Tentar novamente",
-  },
-
   exerciseSearch: {
     placeholder: "Buscar exercício...",
     initialState: "Digite para buscar exercícios",

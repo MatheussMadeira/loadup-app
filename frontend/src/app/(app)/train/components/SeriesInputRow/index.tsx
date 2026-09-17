@@ -16,7 +16,14 @@ import { useProgressionChart } from "@/hooks/useProgression";
 import { useAddRecord, useUpdateRecord } from "@/hooks/useSession";
 import { resolveDisplayValue } from "@/lib/resolveDisplayValue";
 import { trainingSheetService } from "@/services/trainingSheetService";
-import { DayOfWeek, Exercise, LoggedSet, Series, SeriesType } from "@/types";
+import {
+  AddRecordResponse,
+  DayOfWeek,
+  Exercise,
+  LoggedSet,
+  Series,
+  SeriesType,
+} from "@/types";
 
 import { SERIES_ABBR, SERIES_COLOR } from "../../utils";
 
@@ -60,6 +67,13 @@ export interface SeriesInputRowHandle {
   check: () => Promise<boolean>;
   getRestTime: () => number;
   getWeight: () => number;
+  /**
+   * Promise do registro de série que acabou de ser disparado por `check()`,
+   * pra quem precisar saber o resultado da rede (ex.: se veio um alerta de
+   * platô) sem reintroduzir a espera de round-trip que `check()` evita.
+   * Só não-nula logo após `check()` registrar uma série de trabalho nova.
+   */
+  getPendingRecordResult: () => Promise<AddRecordResponse | null> | null;
 }
 
 interface SeriesInputRowProps {
@@ -70,10 +84,6 @@ interface SeriesInputRowProps {
   loggedSet: LoggedSet | undefined;
   isReadOnly: boolean;
   inputsOnly?: boolean;
-  onRepRangeAlert?: (
-    alert: import("@/types").RepRangeAlert,
-    weight: number,
-  ) => void;
   resolvedWeight?: number | null;
   previousWeight?: number | null;
   previousReps?: number | null;
@@ -95,7 +105,6 @@ const SeriesInputRow = forwardRef<SeriesInputRowHandle, SeriesInputRowProps>(
       loggedSet,
       isReadOnly,
       inputsOnly = false,
-      onRepRangeAlert,
       resolvedWeight,
       previousWeight,
       previousReps,
@@ -107,6 +116,7 @@ const SeriesInputRow = forwardRef<SeriesInputRowHandle, SeriesInputRowProps>(
     const addRecord = useAddRecord(sessionId);
     const updateRecord = useUpdateRecord(sessionId);
     const chart = useProgressionChart(exercise.name, series.type);
+    const pendingRecordRef = useRef<Promise<AddRecordResponse | null> | null>(null);
     const weightInitialized = useRef(false);
     const [isEditing, setIsEditing] = useState(false);
     const [weight, setWeight] = useState<string>("0.5");
@@ -192,6 +202,7 @@ const SeriesInputRow = forwardRef<SeriesInputRowHandle, SeriesInputRowProps>(
     );
 
     const handleCheck = useCallback((): Promise<boolean> => {
+      pendingRecordRef.current = null;
       if (isBusy || isReadOnly) return Promise.resolve(false);
       if (loggedSet && !isEditing) return Promise.resolve(true);
 
@@ -245,28 +256,34 @@ const SeriesInputRow = forwardRef<SeriesInputRowHandle, SeriesInputRowProps>(
       // Nao ha retry automatico de proposito: o endpoint faz `records.push()`
       // no backend, entao ele nao e idempotente e um retry depois de resposta
       // perdida criaria uma serie duplicada.
-      addRecord.mutate(payload, {
-        onSuccess: (data) => {
-          if (data.repRangeAlert && onRepRangeAlert) {
-            onRepRangeAlert(data.repRangeAlert, safeWeight);
-          }
-          persistSeriesSuggestions({
-            weight: safeWeight,
-            reps: safeReps,
-            restTime: safeRest,
-          });
-        },
-        onError: () => {
-          // O useAddRecord ja reverteu o cache; aqui so garantimos que o
-          // usuario saiba qual serie precisa refazer, já que ele seguiu em
-          // frente enquanto isso.
-          toast.error(
-            `Série ${seriesIndex + 1} de ${exercise.name} não foi salva. ` +
-              `Refaça o registro pelo menu de edição do treino.`,
-            { duration: 8000 },
-          );
-        },
+      //
+      // `pendingRecordRef` guarda essa mesma resposta separadamente, pra quem
+      // precisa saber se veio um alerta de platô (SessionView) poder esperar
+      // só por isso, sem reintroduzir a espera de round-trip aqui.
+      const pending = new Promise<AddRecordResponse | null>((resolveRecord) => {
+        addRecord.mutate(payload, {
+          onSuccess: (data) => {
+            persistSeriesSuggestions({
+              weight: safeWeight,
+              reps: safeReps,
+              restTime: safeRest,
+            });
+            resolveRecord(data);
+          },
+          onError: () => {
+            // O useAddRecord ja reverteu o cache; aqui so garantimos que o
+            // usuario saiba qual serie precisa refazer, já que ele seguiu em
+            // frente enquanto isso.
+            toast.error(
+              `Série ${seriesIndex + 1} de ${exercise.name} não foi salva. ` +
+                `Refaça o registro pelo menu de edição do treino.`,
+              { duration: 8000 },
+            );
+            resolveRecord(null);
+          },
+        });
       });
+      pendingRecordRef.current = pending;
 
       return Promise.resolve(true);
     }, [
@@ -282,7 +299,6 @@ const SeriesInputRow = forwardRef<SeriesInputRowHandle, SeriesInputRowProps>(
       seriesIndex,
       updateRecord,
       addRecord,
-      onRepRangeAlert,
       persistSeriesSuggestions,
     ]);
 
@@ -293,6 +309,7 @@ const SeriesInputRow = forwardRef<SeriesInputRowHandle, SeriesInputRowProps>(
         getRestTime: () =>
           Math.max(0, parseInt(rest, 10) || series.restTime || 0),
         getWeight: () => parseFloat(weight) || 0.5,
+        getPendingRecordResult: () => pendingRecordRef.current,
       }),
       [handleCheck, rest, series.restTime, weight],
     );

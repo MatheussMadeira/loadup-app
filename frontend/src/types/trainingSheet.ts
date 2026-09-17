@@ -32,6 +32,7 @@ export interface Series {
   suggestedWeight?: number | null;
   suggestedReps?: number | null;
   suggestedRestTime?: number | null;
+  suggestedWeightIsNew?: boolean;
 }
 
 export interface Exercise {

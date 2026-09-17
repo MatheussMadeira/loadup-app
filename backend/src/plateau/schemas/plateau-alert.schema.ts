@@ -31,6 +31,18 @@ export class PlateauAlert {
 
   @Prop({ required: true, default: true, index: true })
   active: boolean;
+
+  /** Quando o modal foi de fato mostrado ao usuário durante o treino. */
+  @Prop({ type: Date, default: null })
+  presentedAt: Date | null;
+
+  /** Quando o usuário confirmou um novo peso a partir deste alerta. */
+  @Prop({ type: Date, default: null })
+  actionedAt: Date | null;
+
+  /** O peso confirmado, para auditoria/depuração. */
+  @Prop({ type: Number, default: null })
+  actionedWeight: number | null;
 }
 
 export const PlateauAlertSchema = SchemaFactory.createForClass(PlateauAlert);

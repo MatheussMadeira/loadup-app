@@ -5,25 +5,23 @@ import { createPortal } from "react-dom";
 import styled, { keyframes } from "styled-components";
 import { X } from "lucide-react";
 
-import { RepRangeAlert } from "@/types";
+import { PlateauAlert } from "@/types";
 import { useScrollLock } from "@/hooks/useScrollLock";
+import { markPresented } from "@/services/plateauService";
 
-interface RepRangeAlertSheetProps {
-  alert: RepRangeAlert;
+interface PlateauAlertSheetProps {
+  alert: PlateauAlert;
   currentWeight: number;
   onConfirm: (newWeight: number) => void;
   onDismiss: () => void;
-  /** Ex.: "2 de 3" — quando há mais de um alerta na fila de fim de sessão. */
-  queueLabel?: string;
 }
 
-export default function RepRangeAlertSheet({
+export default function PlateauAlertSheet({
   alert,
   currentWeight,
   onConfirm,
   onDismiss,
-  queueLabel,
-}: RepRangeAlertSheetProps) {
+}: PlateauAlertSheetProps) {
   const [mounted, setMounted] = useState(false);
   const [weight, setWeight] = useState(String(currentWeight + 2.5));
   const [startY, setStartY] = useState(0);
@@ -32,7 +30,9 @@ export default function RepRangeAlertSheet({
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    markPresented(alert._id).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [alert._id]);
 
   useScrollLock();
 
@@ -52,14 +52,6 @@ export default function RepRangeAlertSheet({
 
   const parsedWeight = parseFloat(weight);
   const safeWeight = isNaN(parsedWeight) || parsedWeight <= 0 ? currentWeight : parsedWeight;
-
-  const isExceeded = alert.alertType === "exceeded";
-  const title = isExceeded
-    ? "Aumente o peso!"
-    : "Revise o peso";
-  const message = isExceeded
-    ? `Você passou de ${alert.repsMax} reps em todas as séries de trabalho. Considere aumentar a carga.`
-    : `Você ficou abaixo de ${alert.repsMin} reps em todas as séries de trabalho. Considere diminuir a carga.`;
 
   if (!mounted) return null;
 
@@ -82,22 +74,20 @@ export default function RepRangeAlertSheet({
         <Handle />
 
         <SheetHeader>
-          <SheetTitleGroup>
-            <SheetTitle $exceeded={isExceeded}>{title}</SheetTitle>
-            {queueLabel && <QueueLabel>{queueLabel}</QueueLabel>}
-          </SheetTitleGroup>
+          <SheetTitle>Você estagnou nesse exercício</SheetTitle>
           <CloseBtn onClick={onDismiss} aria-label="Fechar">
             <X size={16} />
           </CloseBtn>
         </SheetHeader>
 
         <SheetBody>
-          <Message>{message}</Message>
+          <Message>
+            {alert.suggestion ??
+              `${alert.exerciseName} está sem evolução de carga há ${alert.sessionCount} treinos.`}
+          </Message>
 
           <FieldGroup>
-            <FieldLabel>
-              {isExceeded ? "Novo peso sugerido (kg)" : "Novo peso sugerido (kg)"}
-            </FieldLabel>
+            <FieldLabel>Novo peso sugerido (kg)</FieldLabel>
             <WeightRow>
               <StepBtn
                 type="button"
@@ -131,12 +121,8 @@ export default function RepRangeAlertSheet({
             <DismissBtn type="button" onClick={onDismiss}>
               Agora não
             </DismissBtn>
-            <ConfirmBtn
-              type="button"
-              $exceeded={isExceeded}
-              onClick={() => onConfirm(safeWeight)}
-            >
-              Salvar sugestão
+            <ConfirmBtn type="button" onClick={() => onConfirm(safeWeight)}>
+              Salvar novo peso
             </ConfirmBtn>
           </ActionsRow>
         </SheetBody>
@@ -196,31 +182,13 @@ const SheetHeader = styled.div`
   padding: 8px 20px 16px;
 `;
 
-const SheetTitleGroup = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 10px;
-`;
-
-const QueueLabel = styled.span`
-  font-size: 11px;
-  font-weight: 700;
-  color: ${({ theme }) => theme.colors.onSurfaceMuted};
-  background: ${({ theme }) => theme.colors.surface};
-  border: 1px solid ${({ theme }) => theme.colors.outlineVariant};
-  border-radius: ${({ theme }) => theme.borderRadius.pill};
-  padding: 3px 10px;
-  white-space: nowrap;
-`;
-
-const SheetTitle = styled.span<{ $exceeded: boolean }>`
+const SheetTitle = styled.span`
   font-family: "Barlow Condensed", sans-serif;
   font-weight: 900;
   font-size: 22px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: ${({ theme, $exceeded }) =>
-    $exceeded ? theme.colors.primary : theme.colors.onSurface};
+  color: ${({ theme }) => theme.colors.primary};
 `;
 
 const CloseBtn = styled.button`
@@ -326,7 +294,7 @@ const DismissBtn = styled.button`
   white-space: nowrap;
 `;
 
-const ConfirmBtn = styled.button<{ $exceeded: boolean }>`
+const ConfirmBtn = styled.button`
   flex: 1;
   height: 52px;
   border-radius: ${({ theme }) => theme.borderRadius.pill};

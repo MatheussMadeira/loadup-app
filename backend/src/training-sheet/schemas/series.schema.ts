@@ -32,6 +32,10 @@ export class Series {
 
   @Prop({ required: false, min: 0, max: 600 })
   suggestedRestTime?: number;
+
+  /** Peso sugerido acabou de ser ajustado por um alerta de platô, ainda não usado num registro real. */
+  @Prop({ required: false, default: false })
+  suggestedWeightIsNew?: boolean;
 }
 
 export const SeriesSchema = SchemaFactory.createForClass(Series);

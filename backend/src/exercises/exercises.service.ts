@@ -151,6 +151,7 @@ export class ExercisesService {
     dayOfWeek: string,
     exerciseId: string,
     updates: Array<{ seriesOrder: number; suggestedWeight: number | null }>,
+    markAsNew = false,
   ) {
     const sheet = await this.trainingSheetModel.findOne({ userId: toObjectId(userId) }).exec();
     if (!sheet) {
@@ -165,6 +166,7 @@ export class ExercisesService {
       const series = exercise.series.find((s: any) => s.order === update.seriesOrder);
       if (series) {
         (series as any).suggestedWeight = update.suggestedWeight ?? undefined;
+        (series as any).suggestedWeightIsNew = markAsNew;
       }
     }
     sheet.markModified('days');
@@ -198,6 +200,9 @@ export class ExercisesService {
     }
     if (suggestions.suggestedWeight !== undefined) {
       (series as any).suggestedWeight = suggestions.suggestedWeight ?? undefined;
+      // Peso de verdade registrado nessa série: o badge de "peso novo" (se
+      // havia um, de um ajuste de platô) já cumpriu seu papel.
+      (series as any).suggestedWeightIsNew = false;
     }
     if (suggestions.suggestedReps !== undefined) {
       (series as any).suggestedReps = suggestions.suggestedReps ?? undefined;
@@ -243,6 +248,14 @@ export class ExercisesService {
       if (!exercise) continue;
       const series = exercise.series.find((s: any) => s.order === record.seriesOrder);
       if (!series) continue;
+
+      // Uma série que acabou de disparar um alerta de platô já tem um
+      // registro nesta mesma sessão (a detecção só roda depois de salvar o
+      // registro) — sem essa checagem, o sync abaixo sobrescreveria o peso
+      // recém-confirmado no modal de volta pro peso que já tinha sido feito,
+      // no mesmo instante em que a sessão termina.
+      if ((series as any).suggestedWeightIsNew) continue;
+
       (series as any).suggestedWeight = record.weight;
       (series as any).suggestedReps = record.repsCompleted;
       (series as any).suggestedRestTime = record.restTime;

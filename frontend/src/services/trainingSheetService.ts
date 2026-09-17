@@ -86,10 +86,11 @@ export const trainingSheetService = {
     dayOfWeek: string,
     exerciseId: string,
     updates: Array<{ seriesOrder: number; suggestedWeight: number | null }>,
+    markAsNew = false,
   ): Promise<unknown> {
     return apiClient.patch(
       `/training-sheet/days/${dayOfWeek}/exercises/${exerciseId}/series/bulk-suggested-weight`,
-      { updates },
+      { updates, markAsNew },
     );
   },
 

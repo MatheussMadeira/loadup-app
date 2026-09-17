@@ -8,6 +8,7 @@ import {
   TrainingSheetSchema,
 } from '../training-sheet/schemas/training-sheet.schema';
 import { PlateauAlert, PlateauAlertSchema } from '../plateau/schemas/plateau-alert.schema';
+import { PlateauModule } from '../plateau/plateau.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { PlateauAlert, PlateauAlertSchema } from '../plateau/schemas/plateau-ale
       { name: TrainingSheet.name, schema: TrainingSheetSchema },
       { name: PlateauAlert.name, schema: PlateauAlertSchema },
     ]),
+    PlateauModule,
   ],
   controllers: [TrainingSessionController],
   providers: [TrainingSessionService],

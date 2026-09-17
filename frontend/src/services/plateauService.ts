@@ -32,3 +32,13 @@ export function usePlateauAlertsQuery() {
     retry: 3,
   });
 }
+
+/** Marca que o modal de platô foi de fato mostrado ao usuário. */
+export function markPresented(alertId: string): Promise<unknown> {
+  return apiClient.patch(`/plateau/alerts/${alertId}/presented`, {});
+}
+
+/** Usuário confirmou um novo peso a partir do alerta de platô. */
+export function actionAlert(alertId: string, weight: number): Promise<unknown> {
+  return apiClient.patch(`/plateau/alerts/${alertId}/action`, { weight });
+}

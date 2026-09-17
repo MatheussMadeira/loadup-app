@@ -1,4 +1,4 @@
-import { Controller, Get, Param, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../common/guards/jwt.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { PlateauService } from './plateau.service';
@@ -28,5 +28,24 @@ export class PlateauController {
     @Param('exerciseName') exerciseName: string,
   ): Promise<ExercisePlateauStatusDto> {
     return this.plateauService.getAlertByExercise(userId, exerciseName);
+  }
+
+  @Patch('alerts/:alertId/presented')
+  async markPresented(
+    @CurrentUser('id') userId: string,
+    @Param('alertId') alertId: string,
+  ): Promise<{ ok: true }> {
+    await this.plateauService.markPresented(userId, alertId);
+    return { ok: true };
+  }
+
+  @Patch('alerts/:alertId/action')
+  async actionAlert(
+    @CurrentUser('id') userId: string,
+    @Param('alertId') alertId: string,
+    @Body() body: { weight: number },
+  ): Promise<{ ok: true }> {
+    await this.plateauService.actionAlert(userId, alertId, body.weight);
+    return { ok: true };
   }
 }
