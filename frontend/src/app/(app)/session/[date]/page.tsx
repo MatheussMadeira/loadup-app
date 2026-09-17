@@ -3,9 +3,11 @@
 import { useParams, useRouter } from "next/navigation";
 import styled, { keyframes } from "styled-components";
 
+import DayDetailContent from "@/components/DayDetailContent";
 import PageTransition from "@/components/PageTransition";
 import { strings } from "@/constants/strings";
 import { useDayDetails } from "@/hooks/useCalendar";
+import { formatFullDate } from "@/lib/formatDate";
 import { DayOfWeek } from "@/types";
 
 const DAY_FULL_LABELS: Record<string, string> = {
@@ -17,15 +19,6 @@ const DAY_FULL_LABELS: Record<string, string> = {
   saturday: strings.trainingPlan.saturday,
   sunday: strings.trainingPlan.sunday,
 };
-
-function formatFullDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString("pt-BR", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-}
 
 function statusLabel(status: string): string {
   if (status === "completed") return strings.sessionHistory.statusCompleted;
@@ -110,16 +103,6 @@ export default function SessionDetailPage() {
   const records = data.recordedSession?.records ?? [];
   const sessionSt = data.recordedSession?.status ?? "pending";
 
-  // Agrupa records por exercício
-  const recordsByExercise = records.reduce<Record<string, typeof records>>(
-    (acc, r) => {
-      const key = r.exerciseName;
-      acc[key] = acc[key] ? [...acc[key], r] : [r];
-      return acc;
-    },
-    {},
-  );
-
   return (
     <PageTransition>
       <StyledPage>
@@ -145,68 +128,7 @@ export default function SessionDetailPage() {
         </StyledHeader>
 
         <StyledBody>
-          {/* ── Treino planejado ───────────────────────────────── */}
-          {plannedExercises.length > 0 && (
-            <StyledSection>
-              <StyledSectionTitle>
-                {strings.sessionHistory.plannedWorkout}
-              </StyledSectionTitle>
-              {plannedExercises.map((ex) => (
-                <StyledExCard key={ex._id}>
-                  <StyledExHeader>
-                    <StyledExName>{ex.name}</StyledExName>
-                    <StyledExMuscle>{ex.muscleGroup}</StyledExMuscle>
-                  </StyledExHeader>
-                  <StyledSeriesRow>
-                    {ex.series.map((s, i) => (
-                      <StyledSeriesChip key={i}>
-                        {strings.exercises.seriesType[s.type]} ·{" "}
-                        {s.repsMin === s.repsMax
-                          ? `${s.repsMin} rep`
-                          : `${s.repsMin}–${s.repsMax} reps`}
-                      </StyledSeriesChip>
-                    ))}
-                  </StyledSeriesRow>
-                </StyledExCard>
-              ))}
-            </StyledSection>
-          )}
-
-          {/* ── Séries registradas ────────────────────────────── */}
-          <StyledSection>
-            <StyledSectionTitle>
-              {strings.sessionHistory.recordedSets}
-            </StyledSectionTitle>
-            {records.length === 0 ? (
-              <StyledEmptyText>
-                {strings.sessionHistory.noRecords}
-              </StyledEmptyText>
-            ) : (
-              Object.entries(recordsByExercise).map(([exName, sets]) => (
-                <StyledExCard key={exName}>
-                  <StyledExName>{exName}</StyledExName>
-                  <StyledSetList>
-                    {sets.map((s, i) => (
-                      <StyledSetRow key={i}>
-                        <StyledSetIndex>{i + 1}</StyledSetIndex>
-                        <StyledSetType>
-                          {strings.exercises.seriesType[
-                            s.seriesType as keyof typeof strings.exercises.seriesType
-                          ] ?? s.seriesType}
-                        </StyledSetType>
-                        <StyledSetValue>
-                          {strings.sessionHistory.weightReps(
-                            s.weight,
-                            s.repsCompleted,
-                          )}
-                        </StyledSetValue>
-                      </StyledSetRow>
-                    ))}
-                  </StyledSetList>
-                </StyledExCard>
-              ))
-            )}
-          </StyledSection>
+          <DayDetailContent plannedExercises={plannedExercises} records={records} />
         </StyledBody>
       </StyledPage>
     </PageTransition>
@@ -331,112 +253,3 @@ const StyledErrorText = styled.p`
   padding: ${({ theme }) => theme.spacing.lg};
 `;
 
-const StyledSection = styled.section`
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.sm};
-`;
-
-const StyledSectionTitle = styled.h2`
-  font-size: 12px;
-  font-weight: 700;
-  color: ${({ theme }) => theme.colors.onSurfaceMuted};
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-`;
-
-const StyledExCard = styled.div`
-  background: ${({ theme }) => theme.colors.surface};
-  border-radius: ${({ theme }) => theme.borderRadius.inner};
-  padding: ${({ theme }) => theme.spacing.md};
-  box-shadow: ${({ theme }) => theme.shadows.card};
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.sm};
-`;
-
-const StyledExHeader = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: ${({ theme }) => theme.spacing.sm};
-`;
-
-const StyledExName = styled.span`
-  font-size: 15px;
-  font-weight: 700;
-  color: ${({ theme }) => theme.colors.onSurface};
-`;
-
-const StyledExMuscle = styled.span`
-  font-size: 12px;
-  color: ${({ theme }) => theme.colors.onSurfaceMuted};
-`;
-
-const StyledSeriesRow = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: ${({ theme }) => theme.spacing.xs};
-`;
-
-const StyledSeriesChip = styled.span`
-  font-size: 12px;
-  padding: 4px 12px;
-  border-radius: ${({ theme }) => theme.borderRadius.chip};
-  background: ${({ theme }) => theme.colors.primaryContainer};
-  color: ${({ theme }) => theme.colors.primary};
-  font-weight: 600;
-`;
-
-const StyledEmptyText = styled.p`
-  font-size: 14px;
-  color: ${({ theme }) => theme.colors.onSurfaceMuted};
-  padding: ${({ theme }) => theme.spacing.md} 0;
-  text-align: center;
-`;
-
-const StyledSetList = styled.ul`
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-`;
-
-const StyledSetRow = styled.li`
-  display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.sm};
-  padding: 14px 0;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.outlineVariant};
-  &:last-child {
-    border-bottom: none;
-  }
-`;
-
-const StyledSetIndex = styled.span`
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: ${({ theme }) => theme.colors.primaryContainer};
-  color: ${({ theme }) => theme.colors.primary};
-  font-size: 12px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-`;
-
-const StyledSetType = styled.span`
-  font-size: 13px;
-  color: ${({ theme }) => theme.colors.onSurfaceMuted};
-  min-width: 90px;
-`;
-
-const StyledSetValue = styled.span`
-  font-size: 13px;
-  font-weight: 600;
-  color: ${({ theme }) => theme.colors.onSurface};
-`;

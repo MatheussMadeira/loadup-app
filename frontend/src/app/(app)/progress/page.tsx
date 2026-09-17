@@ -29,8 +29,8 @@ import { useLogout } from "@/hooks/useAuth";
 import { authService } from "@/services/authService";
 import { userService } from "@/services/userService";
 
+import MonthlyHistory from "./components/MonthlyHistory";
 import ProgressionChart from "./components/ProgressionChart";
-import WeeklyHistory from "./components/WeeklyHistory";
 import {
   StyledBody,
   StyledCard,
@@ -260,117 +260,6 @@ export default function ProgressPage() {
     !summary.error &&
     summary.data?.totalSessionsRecorded === 0;
 
-  console.log(
-    `🚀 ~ ProgressPage ~ <StyledSectionCard>
-                  <StyledSectionHeading>PREFERÊNCIAS</StyledSectionHeading>
-                  <StyledPreferenceRow>
-                    <StyledPreferenceInfo>
-                      <StyledPreferenceLabel>
-                        Tempo de descanso padrão
-                      </StyledPreferenceLabel>
-                    </StyledPreferenceInfo>
-                    <StyledPreferenceControl>
-                      <StyledControlButton
-                        type="button"
-                        onClick={() => handleRestChange(-5)}
-                      >
-                        −
-                      </StyledControlButton>
-                      <StyledControlValue>{restSeconds}s</StyledControlValue>
-                      <StyledControlButton
-                        type="button"
-                        onClick={() => handleRestChange(5)}
-                      >
-                        +
-                      </StyledControlButton>
-                    </StyledPreferenceControl>
-                  </StyledPreferenceRow>
-
-                  <StyledPreferenceRow>
-                    <StyledPreferenceInfo>
-                      <StyledPreferenceLabel>
-                        Unidade de peso
-                      </StyledPreferenceLabel>
-                    </StyledPreferenceInfo>
-                    <StyledToggleGroup>
-                      <StyledToggleOption
-                        type="button"
-                        $active={weightUnit === "kg"}
-                        onClick={() => handleWeightToggle("kg")}
-                      >
-                        kg
-                      </StyledToggleOption>
-                      <StyledToggleOption
-                        type="button"
-                        $active={weightUnit === "lb"}
-                        onClick={() => handleWeightToggle("lb")}
-                      >
-                        lb
-                      </StyledToggleOption>
-                    </StyledToggleGroup>
-                  </StyledPreferenceRow>
-
-                  <StyledLanguageRow
-                    type="button"
-                    onClick={handleLanguageClick}
-                  >
-                    <StyledSectionLabel>Idioma</StyledSectionLabel>
-                    <StyledLanguageValue>{language} ›</StyledLanguageValue>
-                  </StyledLanguageRow>
-                </StyledSectionCard>:`,
-    <StyledSectionCard>
-      <StyledSectionHeading>PREFERÊNCIAS</StyledSectionHeading>
-      <StyledPreferenceRow>
-        <StyledPreferenceInfo>
-          <StyledPreferenceLabel>
-            Tempo de descanso padrão
-          </StyledPreferenceLabel>
-        </StyledPreferenceInfo>
-        <StyledPreferenceControl>
-          <StyledControlButton
-            type="button"
-            onClick={() => handleRestChange(-5)}
-          >
-            −
-          </StyledControlButton>
-          <StyledControlValue>{restSeconds}s</StyledControlValue>
-          <StyledControlButton
-            type="button"
-            onClick={() => handleRestChange(5)}
-          >
-            +
-          </StyledControlButton>
-        </StyledPreferenceControl>
-      </StyledPreferenceRow>
-
-      <StyledPreferenceRow>
-        <StyledPreferenceInfo>
-          <StyledPreferenceLabel>Unidade de peso</StyledPreferenceLabel>
-        </StyledPreferenceInfo>
-        <StyledToggleGroup>
-          <StyledToggleOption
-            type="button"
-            $active={weightUnit === "kg"}
-            onClick={() => handleWeightToggle("kg")}
-          >
-            kg
-          </StyledToggleOption>
-          <StyledToggleOption
-            type="button"
-            $active={weightUnit === "lb"}
-            onClick={() => handleWeightToggle("lb")}
-          >
-            lb
-          </StyledToggleOption>
-        </StyledToggleGroup>
-      </StyledPreferenceRow>
-
-      <StyledLanguageRow type="button" onClick={handleLanguageClick}>
-        <StyledSectionLabel>Idioma</StyledSectionLabel>
-        <StyledLanguageValue>{language} ›</StyledLanguageValue>
-      </StyledLanguageRow>
-    </StyledSectionCard>,
-  );
   return (
     <PageTransition>
       <StyledPage>
@@ -486,7 +375,7 @@ export default function ProgressPage() {
                   </StyledCard>
                 )}
 
-                <WeeklyHistory />
+                <MonthlyHistory />
 
                 <StyledCard>
                   <StyledSectionHeader>

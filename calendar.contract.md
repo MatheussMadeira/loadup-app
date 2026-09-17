@@ -112,10 +112,12 @@ Get specific day's details (yyyy-MM-dd format).
       {
         exerciseName: string;
         seriesType: string;
+        seriesOrder: number;
         weight: number;
         repsCompleted: number;
+        restTime: number;      // seconds
       }
-    ];
+    ];               // sorted by seriesOrder
   } | null;
 }
 ```

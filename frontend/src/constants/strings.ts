@@ -73,6 +73,9 @@ export const strings = {
     statusPartial: "Parcial",
     statusPending: "Pendente",
     weightReps: (w: number, r: number) => `${w} kg × ${r} rep`,
+    restLabel: (s: number) => `${s}s descanso`,
+    missedDayTitle: "Dia perdido",
+    missedDaySubtitle: "Nenhum treino foi registrado nesse dia.",
   },
 
   trainingPlan: {
@@ -232,8 +235,7 @@ export const strings = {
     improvement: (pct: number) => `+${pct.toFixed(1)}%`,
     seriesUnit: (n: number) => `${n} série${n !== 1 ? "s" : ""}`,
     days: (n: number) => `${n} dia${n !== 1 ? "s" : ""}`,
-    weeklyHistoryTitle: "Histórico Semanal",
-    moreExercises: (n: number) => `+${n} mais`,
+    monthlyHistoryTitle: "Histórico Mensal",
   },
 
   nav: {

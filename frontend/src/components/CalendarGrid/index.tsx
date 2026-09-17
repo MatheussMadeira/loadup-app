@@ -1,5 +1,6 @@
 "use client";
 
+import { Check } from "lucide-react";
 import styled from "styled-components";
 
 import { MonthlyCalendar } from "@/types";
@@ -7,6 +8,8 @@ import { MonthlyCalendar } from "@/types";
 interface CalendarGridProps {
   calendar: MonthlyCalendar;
   onMonthChange: (year: number, month: number) => void;
+  /** Chamado com a data (YYYY-MM-DD) de um dia com sessão registrada ou perdida. */
+  onDaySelect?: (date: string) => void;
 }
 
 const WEEKDAYS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
@@ -29,10 +32,12 @@ const MONTH_NAMES = [
 export default function CalendarGrid({
   calendar,
   onMonthChange,
+  onDaySelect,
 }: CalendarGridProps) {
   const { year, month, days } = calendar;
 
   const firstDay = new Date(year, month - 1, 1).getDay();
+  const todayIso = new Date().toISOString().split("T")[0];
 
   const handlePrev = () => {
     if (month === 1) onMonthChange(year - 1, 12);
@@ -68,21 +73,32 @@ export default function CalendarGrid({
         ))}
         {days.map((day) => {
           const dateNum = new Date(day.date).getDate();
-          const today = new Date().toISOString().split("T")[0];
-          const isToday = day.date.startsWith(today);
-          // Derivar status de exibição a partir dos campos do backend
-          const displayStatus =
-            day.plannedStatus === "rest"
-              ? "rest"
-              : day.sessionStatus === "recorded"
-                ? "completed"
-                : day.sessionStatus === "skipped"
-                  ? "skipped"
-                  : "pending";
+          const dateIso = day.date.slice(0, 10);
+          const isToday = dateIso === todayIso;
+          const isRecorded = day.sessionStatus === "recorded";
+          // Treino planejado, dia já passado (nao hoje) e sem sessão registrada:
+          // o usuário teve a chance de treinar e nao registrou nada.
+          const isMissed =
+            day.plannedStatus !== "rest" && !isRecorded && dateIso < todayIso;
+          const clickable = Boolean(onDaySelect) && (isRecorded || isMissed);
+
           return (
-            <StyledDayCell key={day.date} $isToday={isToday}>
+            <StyledDayCell
+              key={day.date}
+              as={clickable ? "button" : "div"}
+              $isToday={isToday}
+              $clickable={clickable}
+              onClick={clickable ? () => onDaySelect?.(dateIso) : undefined}
+              aria-label={clickable ? `Ver detalhes do treino de ${dateNum}` : undefined}
+            >
               <StyledDayNumber $isToday={isToday}>{dateNum}</StyledDayNumber>
-              <StyledDot $status={displayStatus} />
+              {isRecorded ? (
+                <StyledCheckBadge>
+                  <Check size={10} strokeWidth={3} />
+                </StyledCheckBadge>
+              ) : (
+                <StyledDot $missed={isMissed} />
+              )}
             </StyledDayCell>
           );
         })}
@@ -151,19 +167,31 @@ const StyledWeekday = styled.span`
   letter-spacing: 0.08em;
 `;
 
-const StyledDayCell = styled.div<{ $isToday: boolean }>`
+const StyledDayCell = styled.div<{ $isToday: boolean; $clickable: boolean }>`
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 4px;
   min-height: 48px;
+  width: 100%;
   border-radius: ${({ theme }) => theme.borderRadius.chip};
   background-color: ${({ theme, $isToday }) =>
     $isToday ? theme.colors.primaryContainer : theme.colors.surface};
   border: 1px solid
     ${({ theme, $isToday }) =>
       $isToday ? theme.colors.primary : theme.colors.outlineVariant};
+  font-family: inherit;
+  cursor: ${({ $clickable }) => ($clickable ? "pointer" : "default")};
+  transition: transform 0.15s ease;
+
+  ${({ $clickable }) =>
+    $clickable &&
+    `
+    &:active {
+      transform: scale(0.94);
+    }
+  `}
 `;
 
 const StyledDayNumber = styled.span<{ $isToday: boolean }>`
@@ -176,24 +204,21 @@ const StyledDayNumber = styled.span<{ $isToday: boolean }>`
     $isToday ? theme.colors.primary : theme.colors.onSurface};
 `;
 
-const STATUS_COLORS: Record<string, string | undefined> = {
-  completed: undefined,
-  skipped: undefined,
-  pending: undefined,
-  rest: undefined,
-};
-
-const StyledDot = styled.span<{ $status: string }>`
+const StyledDot = styled.span<{ $missed: boolean }>`
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background-color: ${({ theme, $status }) => {
-    if ($status === "completed") return theme.colors.successContainer;
-    if ($status === "skipped") return theme.colors.errorContainer;
-    if ($status === "pending") return theme.colors.outline;
-    return "transparent";
-  }};
+  background-color: ${({ theme, $missed }) =>
+    $missed ? theme.colors.error : "transparent"};
 `;
 
-// Suppress unused variable warning
-void STATUS_COLORS;
+const StyledCheckBadge = styled.span`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background-color: ${({ theme }) => theme.colors.success};
+  color: ${({ theme }) => theme.colors.onPrimary};
+`;

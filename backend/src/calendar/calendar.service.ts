@@ -164,12 +164,16 @@ export class CalendarService {
             _id: session._id.toString(),
             status: session.status,
             activeSeconds: session.activeSeconds,
-            records: session.records.map((record) => ({
-              exerciseName: record.exerciseName,
-              seriesType: record.seriesType,
-              weight: record.weight,
-              repsCompleted: record.repsCompleted,
-            })),
+            records: [...session.records]
+              .sort((a, b) => a.seriesOrder - b.seriesOrder)
+              .map((record) => ({
+                exerciseName: record.exerciseName,
+                seriesType: record.seriesType,
+                seriesOrder: record.seriesOrder,
+                weight: record.weight,
+                repsCompleted: record.repsCompleted,
+                restTime: record.restTime,
+              })),
           }
         : null,
     };

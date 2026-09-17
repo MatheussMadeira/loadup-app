@@ -36,8 +36,10 @@ export interface TodayCalendar {
 export interface DayRecord {
   exerciseName: string;
   seriesType: string;
+  seriesOrder: number;
   weight: number;
   repsCompleted: number;
+  restTime: number;
 }
 
 /** Detalhes completos de um dia: GET /calendar/:dateString */
