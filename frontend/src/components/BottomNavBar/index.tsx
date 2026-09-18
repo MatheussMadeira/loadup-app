@@ -61,7 +61,6 @@ const StyledNav = styled.nav`
   justify-content: space-around;
   align-items: center;
   padding: 0 ${({ theme }) => theme.spacing.sm};
-  padding-bottom: var(--safe-bottom);
   background-color: ${({ theme }) => theme.colors.glassOverlay};
   border-top: 1px solid ${({ theme }) => theme.colors.outlineVariant};
   backdrop-filter: blur(16px);

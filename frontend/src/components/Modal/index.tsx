@@ -41,15 +41,19 @@ export default function Modal({
   return (
     <StyledOverlay onClick={onClose} role="dialog" aria-modal="true">
       <StyledCard onClick={(e) => e.stopPropagation()}>
-        <StyledCloseButton
-          ref={closeButtonRef}
-          onClick={onClose}
-          aria-label="Fechar"
-        >
-          ×
-        </StyledCloseButton>
-        {title && <StyledTitle>{title}</StyledTitle>}
-        {children}
+        <StyledHeader>
+          <StyledTitleSlot>
+            {title && <StyledTitle>{title}</StyledTitle>}
+          </StyledTitleSlot>
+          <StyledCloseButton
+            ref={closeButtonRef}
+            onClick={onClose}
+            aria-label="Fechar"
+          >
+            ×
+          </StyledCloseButton>
+        </StyledHeader>
+        <StyledBody>{children}</StyledBody>
       </StyledCard>
     </StyledOverlay>
   );
@@ -68,24 +72,49 @@ const StyledOverlay = styled.div`
     ${MODAL_TRANSITION.overlayEasing} both;
 `;
 
+// Tamanho do cartão travado (largura + teto de altura); quem rola é só o
+// StyledBody. Cabeçalho (título + fechar) fica fora do fluxo de scroll, numa
+// linha flex — nada de posicionamento absoluto, então não tem como o botão
+// de fechar ficar por cima do título ou do conteúdo em nenhum tamanho de tela.
 const StyledCard = styled.div`
-  position: relative;
+  display: flex;
+  flex-direction: column;
   background: ${({ theme }) => theme.colors.surfaceElevated};
   border: 1px solid ${({ theme }) => theme.colors.outlineVariant};
   border-radius: ${({ theme }) => theme.borderRadius.inner};
-  padding: ${({ theme }) => theme.spacing.lg};
   width: min(100%, 520px);
   max-height: 90dvh;
-  overflow-y: auto;
+  overflow: hidden;
   animation: ${modalEnter} ${MODAL_TRANSITION.duration}
     ${MODAL_TRANSITION.easing} both;
   box-shadow: ${({ theme }) => theme.shadows.card};
 `;
 
+const StyledHeader = styled.div`
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: ${({ theme }) => theme.spacing.sm};
+  flex-shrink: 0;
+  padding: ${({ theme }) => theme.spacing.lg} ${({ theme }) => theme.spacing.lg}
+    0;
+`;
+
+const StyledTitleSlot = styled.div`
+  flex: 1;
+  min-width: 0;
+`;
+
+const StyledBody = styled.div`
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: ${({ theme }) => theme.spacing.md} ${({ theme }) => theme.spacing.lg}
+    ${({ theme }) => theme.spacing.lg};
+`;
+
 const StyledCloseButton = styled.button`
-  position: absolute;
-  top: ${({ theme }) => theme.spacing.sm};
-  right: ${({ theme }) => theme.spacing.sm};
+  flex-shrink: 0;
   width: 36px;
   height: 36px;
   border: none;
@@ -110,6 +139,6 @@ const StyledTitle = styled.h2`
   font-size: ${({ theme }) => theme.typography.titleLarge.fontSize};
   font-weight: 700;
   color: ${({ theme }) => theme.colors.onSurface};
-  margin-bottom: ${({ theme }) => theme.spacing.md};
-  padding-right: ${({ theme }) => theme.spacing.lg};
+  margin: 0;
+  padding-top: 6px;
 `;
